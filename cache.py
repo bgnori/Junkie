@@ -38,6 +38,9 @@ class Cache(xmlrpc.XMLRPC):
     '''
     return storage.pop(url)
 
+  def xmlrpc_time(self):
+    return time.time()
+  
   def xmlrpc_clear(self):
     storage.clear()
     return None

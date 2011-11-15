@@ -9,6 +9,7 @@ from xmlrpclib import ServerProxy
 
 server = ServerProxy("http://localhost:9000", allow_none=True)
 
+print server.time()
 print server.fetch('http://www.python.org')
 print 'waiting for cache'
 time.sleep(10)
