@@ -15,9 +15,20 @@ class Post(object):
   def render_as_text(self):
     print self
 
+  def urls(self):
+    return tuple()
+
 
 class Text(Post):
-  pass
+  def render_as_text(self):
+    rt = self.elem.find('regular-title')
+    print rt.text
+    rb = self.elem.find('regular-body')
+    print rb.text
+
+  def urls(self):
+    rb = self.elem.find('regular-body')
+    return (img.attrib['src'] for img in rb.findall('img'))
 
 class Quote(Post):
   def render_as_text(self):
@@ -28,19 +39,35 @@ class Quote(Post):
 
 class Photo(Post):
   def render_as_text(self):
-    pc = self.elem.find('photo-caption')
+    pc = self.elem.findall('photo-caption')
     if pc:
-      print pc.text
+      print pc[0].text
     else:
       print 'No photo-caption available.'
-    plu = self.elem.find('photo-link-url')
+    plu = self.elem.findall('photo-link-url')
     if plu:
-      print plu
+      print plu[0].text
     else:
       print 'No photo-link-url available'
     
     for pu in self.elem.findall('photo-url'):
       print pu.attrib['max-width'], pu.text
+
+    ps = self.elem.findall('photoset')
+    if ps:
+      for p in ps[0].findall('photo'):
+        print p.attrib['offset'], p.attrib['caption'], p.attrib['width'], p.attrib['height']
+        for pu in p.findall('photo-url'):
+          print pu.attrib['max-width'], pu.text
+
+  def urls(self):
+    for pu in self.elem.findall('photo-url'):
+      yield pu.text
+    ps = self.elem.findall('photoset')
+    if ps:
+      for p in ps[0].findall('photo'):
+        for pu in p.findall('photo-url'):
+          yield pu.text
 
 class Link(Post):
   def render_as_text(self):
@@ -53,8 +80,10 @@ class Chat(Post):
   def render_as_text(self):
     title = self.elem.find('conversation-title')
     print title.text
-    text = self.elem.find('conversation-text')
-    print text.text
+    # content is very same as conversation/line
+    #text = self.elem.find('conversation-text')
+    #print text.text
+
     lines = self.elem.findall('conversation/line')
     for line in lines:
       print line.attrib['name'], line.attrib['label'], line.text

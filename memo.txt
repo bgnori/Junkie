@@ -22,7 +22,6 @@ Goal
 同期でsingle windowのclientを試作する。
 
 
-
 pumblrはいいのかもしれないが、非同期じゃない。
 modelの部分を作るためにtubmrl apiを理解する上で読むのはおおいにあり。
 => かなりシンプル。
@@ -34,5 +33,25 @@ http://lxml.de/xpathxslt.html
 xmlを連結し、styleを入れてブラウザでレンダリングというモデルにするのか,
 それとも
 postごとにレンダリングしてpaneとみなすべきなのか。
+
+
+renderするときに使うデータをprefetchすればいい。
+別processにする？fetcherともいうべきかな
+ローカルのファイルもしくはメモリで保持。
+ 方針：
+  - requestに充分先行してfetchをかける。
+  - requestしたときに手元にないものは諦める。
+
+fetchするときのUAとかAcceptとか・・・まああとでいいでしょう。
+
+
+postのidでpostをdictにほうりこんで管理。
+time-stampでも管理したい。(シーケンシャルな取得)
+ heapqにするか？
+
+
+
+
+
 
 

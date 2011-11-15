@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
 
+import sys
+import time
 from twisted.web import client, xmlrpc, server
 from twisted.internet import reactor
-import sys
 
 storage = {}
 
@@ -20,15 +21,17 @@ class Cache(xmlrpc.XMLRPC):
   
   def xmlrpc_fetch(self, url):
     '''
-      request url and store the data from url in cache
+      if url is not in cache, 
+        request url and store the data from url in cache
     '''
-    def storePage(data):
-      print >> sys.stderr, 'storing:', url
-      storage[url] = data
-
-    client.getPage(url)\
-      .addCallback(storePage)\
-      .addErrback(printError)
+    if url not in storage:
+      def storePage(data):
+        print >> sys.stderr, 'storing:', url
+        storage[url] = data
+    
+      client.getPage(url)\
+        .addCallback(storePage)\
+        .addErrback(printError)
   
     return url #Echo.
 
@@ -41,12 +44,21 @@ class Cache(xmlrpc.XMLRPC):
   def xmlrpc_time(self):
     return time.time()
   
+  def xmlrpc_count(self):
+    return len(storage)
+
   def xmlrpc_clear(self):
     storage.clear()
+    return None
+
+  def xmlrpc_terminate(self):
+    reactor.callLater(0.1, reactor.stop)
     return None
 
 c = Cache(allowNone=True)
 
 reactor.listenTCP(9000, server.Site(c))
 reactor.run()
+
+print 'bye!'
 
