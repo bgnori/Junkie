@@ -12,10 +12,27 @@ Goal
  なんでもいいのだがプラットフォームを選ぶのは嫌だ。
   Qt, wxpython とかか？
 
-なんか非同期でsingle windowのclientを試作する。
+ - Downloading PyQt-x11-gpl-4.8.6.tar.gz (9.7Mb): 9.7Mb downloaded
+  packagingがおかしくてinstallに失敗する。
+
+ - wxpythonをyumでinstall してwx htmlとか
+
+
+
+同期でsingle windowのclientを試作する。
 
 
 
 pumblrはいいのかもしれないが、非同期じゃない。
 modelの部分を作るためにtubmrl apiを理解する上で読むのはおおいにあり。
+=> かなりシンプル。
+
+
+http://www.tumblr.com/docs/en/api
+http://lxml.de/xpathxslt.html
+
+xmlを連結し、styleを入れてブラウザでレンダリングというモデルにするのか,
+それとも
+postごとにレンダリングしてpaneとみなすべきなのか。
+
 
