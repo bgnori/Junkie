@@ -37,21 +37,24 @@ class CacheServer(object):
 
 
 with CacheServer() as server:
+  sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
+
   f = urllib.urlopen('http://bgnori.tumblr.com/api/read')
   data = f.read()
   f.close()
 
-  sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
   t = etree.XML(data)
   find = etree.XPath('/tumblr/posts/post')
 
   for post in find(t):
     p = model.PostFactory(post)
     print '-' * 60
-    for u in p.urls():
+    for u in p.assets_urls():
       print u
       server.fetch(u)
-    p.render_as_text()
+    #p.render_as_text()
+    t = p.build_tree()
+    print etree.tostring(t, pretty_print=True)
 
   for n in range(10):
     time.sleep(1.0)
