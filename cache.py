@@ -6,6 +6,8 @@ import time
 from twisted.web import client, xmlrpc, server
 from twisted.internet import reactor
 
+import model
+
 storage = {}
 
 
@@ -23,6 +25,12 @@ class Cache(xmlrpc.XMLRPC):
     '''
     d = storage.get(url, None)
     return d[3]
+
+  def xmlrpc_save(self, url):
+    d = storage.get(url, None)
+    f = file(model.url2depot(url), 'w')
+    f.write(d[3])
+    f.close()
   
   def xmlrpc_fetch(self, url):
     '''

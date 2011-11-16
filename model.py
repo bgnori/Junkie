@@ -1,7 +1,15 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
 
+import urlparse
+import os.path
 from lxml import etree
+
+def url2depot(url):
+  parsed = urlparse.urlparse(url)
+  fname = os.path.basename(parsed[2])#'path'
+  path = os.path.join('depot', fname)
+  return path
 
 class Post(object):
   '''
@@ -142,8 +150,8 @@ class Chat(Post):
     title = self.elem.find('conversation-title')
     print title.text
     # content is very same as conversation/line
-    #text = self.elem.find('conversation-text')
-    #print text.text
+    # text = self.elem.find('conversation-text')
+    # print text.text
 
     lines = self.elem.findall('conversation/line')
     for line in lines:
@@ -154,7 +162,7 @@ class Video(Post):
 
 class Audio(Post):
   pass
-  
+
 
 # Must be one of text, quote, photo, link, chat, video, or audio.
 mapper = {'regular':Text, 'quote':Quote, 'photo':Photo, 'link':Link, 'conversation':Chat, 'video':Video, 'audio':Audio}
@@ -166,4 +174,76 @@ def PostFactory(elem):
   '''
   cls = mapper[elem.attrib['type']]
   return cls(elem)
+
+
+
+class Renderer(object):
+  def render(self, post):
+    raise
+
+class TextRenderer(object):
+  def render(self, post):
+    tree = post.build_tree()
+    return etree.tostring(tree, pretty_print=True)
+
+class HTMLRenderer(Renderer):
+  def __init__(self):
+    super(HTMLRenderer, self).__init__()
+    self.context = []
+
+
+  def push(self, item):
+    self.context.append(item)
+  def pop(self):
+    return self.context.pop()
+    
+
+  def dn_post(self, elem):
+    return '<html>'
+  def up_post(self, elem):
+    return '</html>'
+
+  def dn_content(self, elem):
+    return '<div>' + elem.text
+
+  def up_content(self, elem):
+    return '</div>'
+  
+  def dn_image(self, elem):
+    return ''
+  def up_image(self, elem):
+    url = self.pop()
+    return '<img src="%s"/>'%(url2depot(url))
+
+  def dn_assets(self, elem):
+    if elem.attrib['max-width']=='500':
+      self.push(elem.text)
+    return ''
+  def up_assets(self, elem):
+    return ''
+
+
+  def invoke_dn(self, elem):
+    return self.invoke_x(elem, 'dn_')
+  
+  def invoke_up(self, elem):
+    return self.invoke_x(elem, 'up_')
+
+  def invoke_x(self, elem, prefix):
+    name = prefix + elem.tag
+    handler = getattr(self, name, None)
+    if handler:
+      return handler(elem)
+    return ''
+
+  def make_html(self, elem):
+    r = [self.invoke_dn(elem)]
+    r += [self.make_html(child) for child in elem]
+    r += self.invoke_up(elem)
+    return  ''.join(r)
+    
+  def render(self, post):
+    tree = post.build_tree()
+    return self.make_html(tree)
+
 

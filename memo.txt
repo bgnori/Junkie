@@ -62,6 +62,8 @@ time-stampでも管理したい。(シーケンシャルな取得)
  heapqにするか？
 
 
+Junkie's Guideにいれること。
+http://www.kurihama-alcoholism-center.jp/tiar/
 
 /home/nori/Desktop/work/tumblr/model.py:38: FutureWarning: The behavior of
 this method will change in future versions. Use specific 'len(elem)' or 'elem
