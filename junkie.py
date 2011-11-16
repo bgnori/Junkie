@@ -37,7 +37,7 @@ class CacheServer(object):
 
 
 with CacheServer() as server:
-  f = urllib.urlopen('http://bgnori2.tumblr.com/api/read')
+  f = urllib.urlopen('http://bgnori.tumblr.com/api/read')
   data = f.read()
   f.close()
 

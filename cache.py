@@ -12,12 +12,17 @@ storage = {}
 def printError(failure):
   print >> sys.stderr, "Error", failure.getErrorMessage()
 
+
+def assemble(url, rqtime, artime, data):
+  return (url, rqtime, artime, data)
+  
 class Cache(xmlrpc.XMLRPC):
   def xmlrpc_get(self, url):
     '''
       return data pointed by url, None on no data
     '''
-    return storage.get(url, None)
+    d = storage.get(url, None)
+    return d[3]
   
   def xmlrpc_fetch(self, url):
     '''
@@ -25,9 +30,12 @@ class Cache(xmlrpc.XMLRPC):
         request url and store the data from url in cache
     '''
     if url not in storage:
+      storage[url] = assemble(url, time.time(), None, None)
       def storePage(data):
-        print >> sys.stderr, 'storing:', url
-        storage[url] = data
+        u, rq, ar, d = storage[url]
+        ar = time.time()
+        storage[url] = assemble(u, rq, ar, data)
+        print >> sys.stderr, ' %5f s:  %6i byte : %s'%( ar - rq , len(data),url)
     
       client.getPage(url)\
         .addCallback(storePage)\

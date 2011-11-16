@@ -42,6 +42,18 @@ renderするときに使うデータをprefetchすればいい。
   - requestに充分先行してfetchをかける。
   - requestしたときに手元にないものは諦める。
 
+ - requestしたものが使えるようになるまでの時間を記録して予測に使えるようにすべきだろう。
+  ざっくりと見た感じでは、
+   xx.media.tumblrは速い。1s以内 i.e. 25.media.tumblr.com => akamai.
+   www.tumblr.com/photo...は遅い。 => 本家
+  とりあえず3秒前に読み込め。
+
+twitterのpicsはa hrefで参照されているがこれも解決してembedするほうがよいだろう。
+-> そういうことはいっぱいあるのではないか？
+
+htmlのsubsetだが相当「方言」になるなぁ。mark upとして整ってもいないだろう。
+
+
 fetchするときのUAとかAcceptとか・・・まああとでいいでしょう。
 
 
@@ -51,6 +63,10 @@ time-stampでも管理したい。(シーケンシャルな取得)
 
 
 
+/home/nori/Desktop/work/tumblr/model.py:38: FutureWarning: The behavior of
+this method will change in future versions. Use specific 'len(elem)' or 'elem
+is not None' test instead.
+  if qs:
 
 
 

@@ -35,7 +35,8 @@ class Quote(Post):
     qt = self.elem.find('quote-text')
     print qt.text
     qs = self.elem.find('quote-source')
-    print qs.text
+    if qs:
+      print qs.text
 
 class Photo(Post):
   def render_as_text(self):
