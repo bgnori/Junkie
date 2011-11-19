@@ -12,6 +12,7 @@ import urlparse
 import sys
 log.startLogging(sys.stdout)
  
+import plugins
  
 class PrefetchProxyClient(proxy.ProxyClient):
   pass
@@ -30,8 +31,6 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
     '''
     parsed = urlparse.urlparse(self.uri)
     host = parsed[1]
-    print self.uri
-    print host
     if host.endswith('tumblr.com') :
       print 'plug in'
       proxy.ProxyRequest.process(self)
