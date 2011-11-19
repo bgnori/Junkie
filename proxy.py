@@ -13,12 +13,16 @@ import sys
 log.startLogging(sys.stdout)
  
 import plugins
+
+
  
 class PrefetchProxyClient(proxy.ProxyClient):
   pass
 
 class PrefetchProxyClientFactory(proxy.ProxyClientFactory):
   protocol = PrefetchProxyClient 
+
+
 
 class PrefetchProxyRequest(proxy.ProxyRequest):
   protocols = {'http': PrefetchProxyClientFactory}
@@ -31,12 +35,16 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
     '''
     parsed = urlparse.urlparse(self.uri)
     host = parsed[1]
-    if host.endswith('tumblr.com') :
-      print 'plug in'
+    m = plugins.get_mapper()
+    matched = m.postfix(host)
+    if len(matched) == 1:
+      plugin_mod = matched.pop()
+      plugin_mod.process(self)
+    elif len(matched) > 1:
+      print 'ambiguous match', host
       proxy.ProxyRequest.process(self)
     else:
       proxy.ProxyRequest.process(self)
-      #super(PrefetchProxyRequest, self).process()
 
 class PrefetchProxy(proxy.Proxy):
   requestFactory = PrefetchProxyRequest

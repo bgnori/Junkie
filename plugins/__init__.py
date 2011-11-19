@@ -3,25 +3,27 @@
 
 import os.path
 import glob
+import igmatch
 
-_mapper = {}
-
-
-pluins_dir = os.path.dirname(__file__)
-_pattern = os.path.join(pluins_dir, '*.py')
+_mapper = igmatch.IGMatch({})
 
 
-for p in glob.iglob(_pattern):
-  n = os.path.basename(p)
-  assert n.endswith('.py')
-  m = n[:-3]
-  if m == '__init__':
-    continue
-  print m
-  obj = __import__(m, globals(), locals(), [], -1)
-  _mapper[obj.host]=obj
+def load_plugins():
+  pluins_dir = os.path.dirname(__file__)
+  pattern = os.path.join(pluins_dir, '*.py')
 
-print _mapper
+  for p in glob.iglob(pattern):
+    n = os.path.basename(p)
+    assert n.endswith('.py')
+    m = n[:-3]
+    if m == '__init__':
+      continue
+    obj = __import__(m, globals(), locals(), [], -1)
+    _mapper.add(obj.host, obj)
 
-def get(host):
-  return _mapper[host]
+load_plugins()
+
+
+def get_mapper():
+  return _mapper
+

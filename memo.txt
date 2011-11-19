@@ -153,3 +153,15 @@ ProxyClient自体に手をいれるのではなく、継承してPrefetchProxyCl
 2011-11-19 19:46:51+0900 [PrefetchProxyClient,client] Stopping factory <__main__.PrefetchProxyClientFactory instance at 0x1d29320>
 
 
+「コンピュータサイエンスに難問は二つしかない。それは概念に名前をつけることと、キャッシュの失効である」
+- Phil Karlton
+There is also a variation on this that says there are two hard things in
+computer science: cache invalidation, naming things, and off-by-one errors.
+
+
+あ・・・postfixの設計間違えた。
+おとなしく正規表現にしておけばよかった。
+
+
+
+
