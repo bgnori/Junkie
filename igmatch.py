@@ -24,6 +24,12 @@ class IGMatch(object):
     >>> igm.postfix('tumblr.com')
     set([0, 1, 2])
 
+    >>> igm.postfix('media.tumblr.com')
+    set([2])
+
+    >>> igm.postfix('23.media.tumblr.com')
+    set([2])
+
     >>> igm.postfix('jp')
     set([])
 
@@ -89,7 +95,10 @@ class IGMatch(object):
     if len(xs) > 1: 
       r = imp.get(xs[0], None)
       if r:
-        return self._postfix(r[0], xs[1:])
+        if len(r[0]) > 0:
+          return self._postfix(r[0], xs[1:])
+        else:
+          return set([r[1]])
       else:
         return set([])
     elif len(xs) == 1:
@@ -97,7 +106,8 @@ class IGMatch(object):
       if r is not None:
         if len(r) == 2:
           x = self._to_set(r[0])
-          x.add(r[1])
+          if len(xs) == 1:
+            x.add(r[1])
           return x
         elif len(r) == 1:
           return self._to_set(r[0])
@@ -125,7 +135,6 @@ class IGMatch(object):
 
 
 if __name__ == '__main__':
-  obj = IGMatch([('tumblr.com', 0), ('www.tumblr.com', 1), ('media.tumblr.com', 2), ('www.google.com', 3)])
   import doctest
   doctest.testmod()
 
