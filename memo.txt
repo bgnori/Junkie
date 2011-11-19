@@ -137,6 +137,19 @@ class ProxyClientFactory(ClientFactory):
 で大半はProxyClient転送されている。
 ProxyClient自体に手をいれるのではなく、継承してPrefetchProxyClientでも実装して、
 ごにょごにょですかね。
+=>> ProxyRequestのようだ。
 
+
+手を入れたときのログ。 stdout自体がhookされている模様。
+
+2011-11-19 19:46:42+0900 [-] Log opened.
+2011-11-19 19:46:42+0900 [-] __main__.PrefetchProxyFactory starting on 8080
+2011-11-19 19:46:42+0900 [-] Starting factory <__main__.PrefetchProxyFactory instance at 0x191ff38>
+2011-11-19 19:46:50+0900 [PrefetchProxy,0,127.0.0.1] http://www.tumblr.com/dashboard
+2011-11-19 19:46:50+0900 [PrefetchProxy,0,127.0.0.1] www.tumblr.com
+2011-11-19 19:46:50+0900 [PrefetchProxy,0,127.0.0.1] plug in
+2011-11-19 19:46:50+0900 [PrefetchProxy,0,127.0.0.1] Starting factory <__main__.PrefetchProxyClientFactory instance at 0x1d29320>
+2011-11-19 19:46:51+0900 [PrefetchProxyClient,client] 127.0.0.1 - - [19/Nov/2011:10:46:50 +0000] "GET http://www.tumblr.com/dashboard HTTP/1.1" 200 13464 "http://www.tumblr.com/tagged/animals" "Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20100101 Firefox/8.0"
+2011-11-19 19:46:51+0900 [PrefetchProxyClient,client] Stopping factory <__main__.PrefetchProxyClientFactory instance at 0x1d29320>
 
 

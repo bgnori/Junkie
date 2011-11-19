@@ -8,6 +8,7 @@
 from twisted.web import proxy, http
 from twisted.internet import reactor
 from twisted.python import log
+import urlparse
 import sys
 log.startLogging(sys.stdout)
  
@@ -27,8 +28,13 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
       else:
         use ordinary request
     '''
-    if False:
-      pass
+    parsed = urlparse.urlparse(self.uri)
+    host = parsed[1]
+    print self.uri
+    print host
+    if host.endswith('tumblr.com') :
+      print 'plug in'
+      proxy.ProxyRequest.process(self)
     else:
       proxy.ProxyRequest.process(self)
       #super(PrefetchProxyRequest, self).process()
@@ -39,11 +45,6 @@ class PrefetchProxy(proxy.Proxy):
 class PrefetchProxyFactory(http.HTTPFactory):
   protocol = PrefetchProxy
 
-class ProxyFactory(http.HTTPFactory):
-  protocol = proxy.Proxy
-
-	
-#reactor.listenTCP(8080, ProxyFactory())
 reactor.listenTCP(8080, PrefetchProxyFactory())
 reactor.run()
 
