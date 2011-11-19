@@ -38,6 +38,7 @@ postごとにレンダリングしてpaneとみなすべきなのか。
 renderするときに使うデータをprefetchすればいい。
 別processにする？fetcherともいうべきかな
 ローカルのファイルもしくはメモリで保持。
+
  方針：
   - requestに充分先行してfetchをかける。
   - requestしたときに手元にないものは諦める。
@@ -48,8 +49,15 @@ renderするときに使うデータをprefetchすればいい。
    www.tumblr.com/photo...は遅い。 => 本家
   とりあえず3秒前に読み込め。
 
+ - wx.html.windowの仕様でfileからしかimgを読み込めないようだ。
+   とりあえずメモリ渡しはできないように見える。
+   
+ - renderを作るのがよいか？
+
+
 twitterのpicsはa hrefで参照されているがこれも解決してembedするほうがよいだろう。
 -> そういうことはいっぱいあるのではないか？
+ need to name this idea. expand?
 
 htmlのsubsetだが相当「方言」になるなぁ。mark upとして整ってもいないだろう。
 
@@ -65,11 +73,70 @@ time-stampでも管理したい。(シーケンシャルな取得)
 Junkie's Guideにいれること。
 http://www.kurihama-alcoholism-center.jp/tiar/
 
-/home/nori/Desktop/work/tumblr/model.py:38: FutureWarning: The behavior of
-this method will change in future versions. Use specific 'len(elem)' or 'elem
-is not None' test instead.
-  if qs:
 
+twisted.webにあるproxyを起点にするのが良さそう。
+
+
+
+----------------------------------------
+in proxy.py
+from twisted.web import proxy, http
+class ProxyFactory(http.HTTPFactory):
+    protocol = proxy.Proxy
+----------------------------------------
+in twisted/web/proxy.py
+class Proxy(HTTPChannel):
+    requestFactory = ProxyRequest
+----------------------------------------
+うーん、HTTPChannel classがもっているclass memberをみたほうが良さそう。
+----------------------------------------
+親クラスは、LineReceiver
+
+http://twistedmatrix.com/documents/11.0.0/api/twisted.protocols.basic.LineReceiver.html
+A protocol that receives lines and/or raw data, depending on mode.
+
+In line mode, each line that's received becomes a callback to lineReceived. In
+raw data mode, each chunk of raw data becomes a callback to rawDataReceived.
+The setLineMode and setRawMode methods switch between the two modes.
+
+
+さらに元をたどると、IProtocolを実装している。
+http://twistedmatrix.com/documents/11.0.0/api/twisted.internet.interfaces.IProtocol.html
+IProtocol(Interface)
+def dataReceived(data): (source) 
+def connectionLost(reason): (source) 
+def makeConnection(transport): (source)
+def connectionMade(): (source)
+
+call graphのようなものが欲しいのだが・・・
+
+
+class Request:
+    def requestReceived(self, command, path, version):
+   	... 
+        self.process()
+
+class ProxyRequest(Request):
+    def process(self):
+が差分。
+
+
+        class_ = self.protocols[protocol]
+        clientFactory = class_(self.method, rest, self.clientproto, headers,
+                               s, self)
+
+とかなんだろう？
+protocolは'http'という文字列。
+    protocols = {'http': ProxyClientFactory}
+なので、ProxyFactoryをみればいい。
+
+
+
+class ProxyClientFactory(ClientFactory):
+    protocol = ProxyClient
+で大半はProxyClient転送されている。
+ProxyClient自体に手をいれるのではなく、継承してPrefetchProxyClientでも実装して、
+ごにょごにょですかね。
 
 
 
