@@ -11,9 +11,8 @@ from xmlrpclib import ServerProxy
 
 import model
 
-storage = {}
 
-class CacheServer(object):
+class CacheServerProcess(object):
   process = None
   def __enter__(self):
     self.process = subprocess.Popen(['python', 'cache.py'])
@@ -27,44 +26,35 @@ class CacheServer(object):
       print 'cache process looks terminated.'
     return False
 
+  
 
 def printError(failure):
   print >> sys.stderr, "Error", failure.getErrorMessage()
 
+class CacheServer(xmlrpc.XMLRPC):
+  def __init__(self, storage, *args, **kw):
+    xmlrpc.XMLRPC.__init__(self, *args, **kw)
+    self.storage = storage
 
-def assemble(url, rqtime, artime, data):
-  return (url, rqtime, artime, data)
-  
-class Cache(xmlrpc.XMLRPC):
   def xmlrpc_get(self, url):
     '''
       return data pointed by url, None on no data
     '''
-    print url
-    d = storage.get(url, None)
+    d = self.storage.get(url, None)
     if d:
-      return xmlrpc.Binary(d[3])
+      return xmlrpc.Binary(d)
     else:
       return None 
 
-  def xmlrpc_save(self, url):
-    d = storage.get(url, None)
-    f = file(model.url2depot(url), 'w')
-    f.write(d[3])
-    f.close()
-  
   def xmlrpc_fetch(self, url):
     '''
       if url is not in cache, 
         request url and store the data from url in cache
     '''
-    if url not in storage:
-      storage[url] = assemble(url, time.time(), None, None)
+    if url not in self.storage:
+      ticket = self.storage.reserve(url)
       def storePage(data):
-        u, rq, ar, d = storage[url]
-        ar = time.time()
-        storage[url] = assemble(u, rq, ar, data)
-        print >> sys.stderr, ' %5f s:  %6i byte : %s'%( ar - rq , len(data),url)
+        self.storage.set(ticket, data)
     
       client.getPage(url)\
         .addCallback(storePage)\
@@ -76,28 +66,26 @@ class Cache(xmlrpc.XMLRPC):
     '''
       remove data pointed by the url from cache 
     '''
-    return storage.pop(url)
+    return self.storage.pop(url)
 
   def xmlrpc_time(self):
     return time.time()
   
   def xmlrpc_count(self):
-    return len(storage)
-
-  def xmlrpc_clear(self):
-    storage.clear()
-    return None
+    return len(self.storage)
 
   def xmlrpc_terminate(self):
     reactor.callLater(0.1, reactor.stop)
     return None
 
 if __name__ == '__main__':
-  c = Cache(allowNone=True)
+  storage = model.Storage('depot')
+  print storage.index
+
+  c = CacheServer(storage, allowNone=True)
 
   reactor.listenTCP(9000, server.Site(c))
   reactor.run()
 
   print 'bye!'
-
 

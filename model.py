@@ -1,15 +1,117 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
-
+import sys
 import urlparse
+import os
 import os.path
+import time
+import pickle
 from lxml import etree
 
-def url2depot(url):
+def url2name(url):
   parsed = urlparse.urlparse(url)
-  fname = os.path.basename(parsed[2])#'path'
-  path = os.path.join('depot', fname)
-  return path
+  return os.path.basename(parsed[2])#'path'
+
+
+def assemble(url, rqtime, artime, data):
+  return (url, rqtime, artime, data)
+
+class Storage(object):
+  '''
+    may be not right to place this class in model.py
+  '''
+  def __init__(self, path):
+    self.path = path
+    self.load()
+
+  def __contains__(self, key):
+    return key in self.index 
+
+  def __len__(self):
+    pass
+  
+  def __iter__(self):
+    for key in self.index.keys():
+      yield self.get(key)
+
+  def reserve(self, key):
+    assert key not in self
+    ticket = assemble(key , time.time(), None, None)
+    return ticket
+
+  def _make_path(self, fname):
+    return os.path.join(self.path, fname)
+
+  def set(self, ticket, data):
+    assert ticket[0] not in self
+    url = ticket[0]
+    rq = ticket[1]
+    ar = time.time()
+    print >> sys.stderr, ' %5f s:  %6i byte : %s'%( ar - rq , len(data), url)
+    fname = url2name(url)
+    with file(self._make_path(fname), 'w') as f:
+      f.write(data)
+
+  def get(self, key, default=None):
+    p = self.peek_filepath(self, default)
+    if p is None:
+      return None
+    with file(p, 'r') as f:
+      return f.read()
+
+  def peek_filepath(self, key,  default=None):
+    fname = self.index.get(key, default)
+    if fname is None:
+      return None
+    return self._make_path(fname)
+
+  def pop(self, key):
+    p = self.peek_filepath(key)
+    if p:
+      os.remove(p)
+      del self.index[key]
+    
+  def load(self):
+    p = self._make_path('index.pickle')
+    
+    no_index = False
+    try:
+      f = open(p)
+    except:
+      f = None
+      pass
+    if f:
+      try:
+        self.index = pickle.load(f)
+      except:
+        no_index = True        
+      finally:
+        f.close()
+    else:
+      no_index = True
+
+    if no_index: 
+      self.index = {}
+      self.save()
+
+  def save(self):
+    p = self._make_path('index.pickle')
+    with open(p, 'w') as f:
+      pickle.dump(self.index, f)
+
+  def fix(self):
+    to_delete = []
+    for k, v in self.index.items():
+      p = self._make_path(v)
+      try:
+        f = open(p)
+        f.close()
+      except:
+        to_delete.append[k]
+    for k in to_delete:
+      del self.index[k]
+    self.save()
+
 
 class Post(object):
   '''
@@ -213,7 +315,8 @@ class HTMLRenderer(Renderer):
     return ''
   def up_image(self, elem):
     url = self.pop()
-    return '<img src="%s"/>'%(url2depot(url))
+    #Storage.peek_filepath( Ugh!
+    return '<img src="%s"/>'%(url)
 
   def dn_assets(self, elem):
     if elem.attrib['max-width']=='500':

@@ -17,11 +17,10 @@ import codecs
 
 from lxml import etree
 from xmlrpclib import ServerProxy
-import model
-from cache import CacheServer
+import model 
+from cache import CacheServerProcess 
 
-
-with CacheServer() as server:
+with CacheServerProcess() as server:
   sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
 
   f = urllib.urlopen('http://bgnori.tumblr.com/api/read')
@@ -44,7 +43,7 @@ with CacheServer() as server:
 
   for n in range(5):
     time.sleep(1.0)
-    print server.count()
+    #print server.count()
   raw_input() #wait
   for post in posts:
     for url in post.assets_urls():
