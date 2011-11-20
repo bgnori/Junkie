@@ -14,26 +14,11 @@ import sys
 import time
 import urllib
 import codecs
-import subprocess
 
 from lxml import etree
 from xmlrpclib import ServerProxy
 import model
-
-class CacheServer(object):
-  process = None
-  def __enter__(self):
-    self.process = subprocess.Popen(['python', 'cache.py'])
-    return ServerProxy("http://localhost:9000", allow_none=True)
-
-  def __exit__(self, exc_type, exc_value, traceback):
-    if self.process.poll() is None:
-      print 'trying to terminate cache process'
-      server.terminate()
-      self.process.wait()
-      print 'cache process looks terminated.'
-    return False
-
+from cache import CacheServer
 
 
 with CacheServer() as server:

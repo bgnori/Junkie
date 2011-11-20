@@ -3,12 +3,29 @@
 
 import sys
 import time
+import subprocess
 from twisted.web import client, xmlrpc, server
 from twisted.internet import reactor
+
+from xmlrpclib import ServerProxy
 
 import model
 
 storage = {}
+
+class CacheServer(object):
+  process = None
+  def __enter__(self):
+    self.process = subprocess.Popen(['python', 'cache.py'])
+    return ServerProxy("http://localhost:9000", allow_none=True)
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    if self.process.poll() is None:
+      print 'trying to terminate cache process'
+      server.terminate()
+      self.process.wait()
+      print 'cache process looks terminated.'
+    return False
 
 
 def printError(failure):
@@ -23,8 +40,12 @@ class Cache(xmlrpc.XMLRPC):
     '''
       return data pointed by url, None on no data
     '''
+    print url
     d = storage.get(url, None)
-    return d[3]
+    if d:
+      return xmlrpc.Binary(d[3])
+    else:
+      return None 
 
   def xmlrpc_save(self, url):
     d = storage.get(url, None)
@@ -71,10 +92,12 @@ class Cache(xmlrpc.XMLRPC):
     reactor.callLater(0.1, reactor.stop)
     return None
 
-c = Cache(allowNone=True)
+if __name__ == '__main__':
+  c = Cache(allowNone=True)
 
-reactor.listenTCP(9000, server.Site(c))
-reactor.run()
+  reactor.listenTCP(9000, server.Site(c))
+  reactor.run()
 
-print 'bye!'
+  print 'bye!'
+
 
