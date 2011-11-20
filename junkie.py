@@ -30,33 +30,15 @@ with CacheServerProcess() as server:
   t = etree.XML(data)
   find = etree.XPath('/tumblr/posts/post')
 
-  renderer = model.TextRenderer()
+  #renderer = model.TextRenderer()
   posts = []  
   for post in find(t):
     p = model.PostFactory(post)
-    print '-' * 60
     for u in p.assets_urls():
-      print u
       server.fetch(u)
-    print renderer.render(p)
+    #print renderer.render(p)
     posts.append(p)
 
-  for n in range(5):
-    time.sleep(1.0)
-    #print server.count()
   raw_input() #wait
-  for post in posts:
-    for url in post.assets_urls():
-      print 'saving:', url
-      server.save(url)
-  
-  import wx
-  import viewer
-  app = wx.App(False)
-  frame = wx.Frame(None, wx.ID_ANY, 'Hey Tumblr Junkie!')
-  cv = viewer.ContentViewer(frame, -1)
-  cv.SetContent(posts[0])
-  frame.Show(True)
-  app.MainLoop()
-  
-
+  server.save()
+  raw_input() #wait

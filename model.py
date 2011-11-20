@@ -50,6 +50,7 @@ class Storage(object):
     print >> sys.stderr, ' %5f s:  %6i byte : %s'%( ar - rq , len(data), url)
     fname = url2name(url)
     with file(self._make_path(fname), 'w') as f:
+      self.index[url] = fname
       f.write(data)
 
   def get(self, key, default=None):
@@ -96,6 +97,7 @@ class Storage(object):
 
   def save(self):
     p = self._make_path('index.pickle')
+    print self.index
     with open(p, 'w') as f:
       pickle.dump(self.index, f)
 

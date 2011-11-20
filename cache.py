@@ -14,14 +14,16 @@ import model
 
 class CacheServerProcess(object):
   process = None
+  server = None
   def __enter__(self):
     self.process = subprocess.Popen(['python', 'cache.py'])
-    return ServerProxy("http://localhost:9000", allow_none=True)
+    self.server = ServerProxy("http://localhost:9000", allow_none=True)
+    return self.server
 
   def __exit__(self, exc_type, exc_value, traceback):
     if self.process.poll() is None:
       print 'trying to terminate cache process'
-      server.terminate()
+      self.server.terminate()
       self.process.wait()
       print 'cache process looks terminated.'
     return False
@@ -73,6 +75,10 @@ class CacheServer(xmlrpc.XMLRPC):
   
   def xmlrpc_count(self):
     return len(self.storage)
+
+  def xmlrpc_save(self):
+    self.storage.save()
+    return None
 
   def xmlrpc_terminate(self):
     reactor.callLater(0.1, reactor.stop)
