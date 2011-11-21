@@ -11,7 +11,7 @@ host = 'media.tumblr.com'
 server = Connection()
 
 def process(request):
-  print 'plugin: tumblr is serving'
+  print 'plugin: media-tumblr is serving'
   cached = server.get(request.uri)
   if not cached:
     proxy.ProxyRequest.process(request)

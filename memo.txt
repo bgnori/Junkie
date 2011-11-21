@@ -177,4 +177,33 @@ b)は致命的。
 
 postの情報を追記で溜め込むのでcontrolが必要。
 
+jsのcodeを見ると、こんな感じなので10分に一回か、一分に一回チェックしている
+      this request genereted by following code in dashboard.html:
+        var check_for_new_posts_url = 'http://abacus.tumblr.com/check_for_new_posts/a0146229bf7e844f190e2fcaecc47ab9.js';
+        check_for_new_posts(60000);
+time.time()の差を見る限り、90秒ごとに見える。
+
+
+/api/dashboard, /api/write対応
+POST queryに含まれる認証情報を吸い出す
+ email
+ password
+ => 最初のloginを捕まえないとだめ。なのでcookieを覗き見る
+
+ generator: これは別途必要。
+
+postの内容は不明だが、これで名前をチェックする。
+http://www.tumblr.com/check_if_tumblelog_name_is_available
+
+
+      client.getPage('http://www.tumblr.com/dashboard', headers=myheaders)\
+はheaderを任意に指定できるくせに、responseじゃなくて、bodyだけをCallbackに渡す。
+
+getPageのかわりにgetResponseをhackする。
+bodyをうまく処理できないので、downloadPageを使ったら、今度はheaderがこわされるらしく、login扱いにならない。
+
+
+
+
+
 
