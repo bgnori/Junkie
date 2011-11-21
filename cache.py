@@ -11,19 +11,23 @@ from xmlrpclib import ServerProxy
 
 import model
 
+def Connection():
+  return ServerProxy("http://localhost:9000", allow_none=True)
 
 class CacheServerProcess(object):
   process = None
   server = None
   def __enter__(self):
     self.process = subprocess.Popen(['python', 'cache.py'])
-    self.server = ServerProxy("http://localhost:9000", allow_none=True)
+    self.server = Connection()
     return self.server
 
   def __exit__(self, exc_type, exc_value, traceback):
     if self.process.poll() is None:
       print 'trying to terminate cache process'
+      self.server.save()
       self.server.terminate()
+      #self.process.terminate()
       self.process.wait()
       print 'cache process looks terminated.'
     return False
@@ -86,12 +90,9 @@ class CacheServer(xmlrpc.XMLRPC):
 
 if __name__ == '__main__':
   storage = model.Storage('depot')
-  print storage.index
-
   c = CacheServer(storage, allowNone=True)
-
   reactor.listenTCP(9000, server.Site(c))
   reactor.run()
 
-  print 'bye!'
+  print 'bye! (cache.py)'
 

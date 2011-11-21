@@ -5,10 +5,10 @@
 from twisted.web import proxy
 from xmlrpclib import ServerProxy
 import urlparse
+from cache import Connection
 
-host = 'tumblr.com'
-server = ServerProxy("http://localhost:9000", allow_none=True)
-
+host = 'media.tumblr.com'
+server = Connection()
 
 def process(request):
   print 'plugin: tumblr is serving'
@@ -32,7 +32,5 @@ def process(request):
     request.responseHeaders.addRawHeader("Content-Type", "image/png")
   request.write(cached.data)
   request.finish()
-
-
 
 

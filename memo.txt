@@ -31,8 +31,7 @@ http://www.tumblr.com/docs/en/api
 http://lxml.de/xpathxslt.html
 
 xmlを連結し、styleを入れてブラウザでレンダリングというモデルにするのか,
-それとも
-postごとにレンダリングしてpaneとみなすべきなのか。
+それともpostごとにレンダリングしてpaneとみなすべきなのか。
 
 
 renderするときに使うデータをprefetchすればいい。
@@ -161,7 +160,21 @@ computer science: cache invalidation, naming things, and off-by-one errors.
 
 あ・・・postfixの設計間違えた。
 おとなしく正規表現にしておけばよかった。
+てかやりすぎ。
 
 
+dashboardをサポートしたい。
+
+junkie.pyにprefetchの指示を生成する機能を入れるべきかな？
+ajaxのrequestにhookすればよさげ
+ "GET http://abacus.tumblr.com/check_for_new_posts/a0146229bf7e844f190e2fcaecc47ab9.js?1321833330624 HTTP/1.1" 
+ 200 26 "http://www.tumblr.com/dashboard" "Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20100101 Firefox/8.0"
+
+これはplugins/tumblr.pyのほうがよいのか？
+ a) junkie.pyだとprocess間通信が発生
+ b) plugin内だと/api/readを待つのが困る。
+b)は致命的。
+
+postの情報を追記で溜め込むのでcontrolが必要。
 
 

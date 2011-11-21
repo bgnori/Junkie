@@ -9,11 +9,27 @@ from twisted.web import proxy, http
 from twisted.internet import reactor
 from twisted.python import log
 import urlparse
+import subprocess
 import sys
 log.startLogging(sys.stdout)
  
 import plugins
 
+
+class ProxyServerProcess(object):
+  process = None
+  server = None
+  def __enter__(self):
+    self.process = subprocess.Popen(['python', 'proxy.py'])
+    return None
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    if self.process.poll() is None:
+      print 'trying to terminate proxy process'
+      self.process.terminate()
+      self.process.wait()
+      print 'proxy process looks terminated.'
+    return False
 
  
 class PrefetchProxyClient(proxy.ProxyClient):
@@ -52,6 +68,9 @@ class PrefetchProxy(proxy.Proxy):
 class PrefetchProxyFactory(http.HTTPFactory):
   protocol = PrefetchProxy
 
-reactor.listenTCP(8080, PrefetchProxyFactory())
-reactor.run()
+if __name__ == '__main__':
+  reactor.listenTCP(8080, PrefetchProxyFactory())
+  reactor.run()
+  print 'bye! (proxy.py)'
+
 
