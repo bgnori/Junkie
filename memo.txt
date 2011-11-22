@@ -203,6 +203,20 @@ getPageのかわりにgetResponseをhackする。
 bodyをうまく処理できないので、downloadPageを使ったら、今度はheaderがこわされるらしく、login扱いにならない。
 
 
+class HTTPPageGetter(http.HTTPClient):
+の
+    def connectionMade(self):
+で、
+            if key.lower() not in self._specialHeaders:
+                # we calculated it on our own
+                self.sendHeader(key, value)
+とか・・・
+    _specialHeaders = set(('host', 'user-agent', 'cookie', 'content-length'))
+である。
+hostはともかく、uaとcookieが書き換わっている。
+爆発しろ
+
+
 
 
 
