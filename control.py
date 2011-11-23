@@ -5,8 +5,9 @@ import sys
 import urllib
 import time
 import codecs
-import Cookie
-#import StringIO
+
+import urlparse
+import urllib
 
 #import zlib
 import gzip
@@ -14,9 +15,11 @@ import gzip
 from lxml import etree
 from xmlrpclib import ServerProxy
 
+import yaml
+
 from twisted.python import log
 from twisted.internet import reactor
-from twisted.web import client, xmlrpc, server
+from twisted.web import client, xmlrpc, server, http
 import cache
 import model 
 
@@ -32,64 +35,43 @@ def Connection():
 
 conn = cache.Connection()
 
-def getter(url, contextFactory=None, *args, **kwargs):
-    return client._makeGetterFactory(
-        url,
-        client.HTTPClientFactory,
-        contextFactory=contextFactory,
-        *args, **kwargs)
-
-
-
 posts = []  
-myheaders = None
+with open('config') as f:
+  auth = yaml.load(f.read())
+agent = 'Junkie https://github.com/bgnori/Junkie'
 
 class Controller(xmlrpc.XMLRPC): 
   def xmlrpc_store_headers(self, snatched):
-    global myheaders
+    ''' todo: rename and use this for fetch control '''
     print 'xmlrpc_store_cookie'
-    if snatched:
-      myheaders = snatched
     return None
 
 
   def xmlrpc_on_abacus(self, url):
     '''
+      Access to abacus fired by js in browser, to know new arrivals.
+    '''
+    '''
       fires on request such as:
-      http://abacus.tumblr.com/check_for_new_posts/a0146229bf7e844f190e2fcaecc47ab9.js?1321858402974
-
+      http://abacus.tumblr.com/check_for_new_posts/a0146229bf7e844f190e2fcaecc47ab9.js?1321858402974 
       this request genereted by following code in dashboard.html:
         var check_for_new_posts_url = 'http://abacus.tumblr.com/check_for_new_posts/a0146229bf7e844f190e2fcaecc47ab9.js';
         check_for_new_posts(60000);
     '''
     print time.time(), url
-    if myheaders:
-      print 'fetching dashboard'#, myheaders
-      #g = getter('http://www.tumblr.com/dashboard', headers=myheaders)
-      d = client.downloadPage('http://www.tumblr.com/dashboard', 'dashboard.xml.gz', headers=myheaders)
+
+    #if myheaders:
+    if True:
+      data_dict = {'start': 0, 'num': 50}
+      data_dict.update(auth)
+      postdata = urllib.urlencode(data_dict)
+      d = client.getPage('http://www.tumblr.com/api/dashboard', 
+                              method='POST',
+                              agent=agent,
+                              headers = {'Content-Type': 'application/x-www-form-urlencoded'},
+                              postdata=postdata)
       def nyang(data):
         print 'Controller:self.nyang'
-        '''
-        for k, v in g.response_headers.items():
-          print k, v
-
-        print '-'*50
-        print g.message[:40]
-
-        coding = g.response_headers.get('content-encoding', ('plain',))[0]
-        if coding == 'gzip':
-          print 'gzip'
-          data = zlib.decompress(f.data)#g.message)
-        elif coding == 'plain':
-          print 'plain'
-          data = g.message
-        else:
-          print coding
-        '''
-        f = gzip.open('dashboard.xml.gz')
-        data = f.read() 
-        f.close()
-
         print '-'*50
         print data[:40]
         print '-'*50

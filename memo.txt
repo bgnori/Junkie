@@ -216,7 +216,16 @@ class HTTPPageGetter(http.HTTPClient):
 hostはともかく、uaとcookieが書き換わっている。
 爆発しろ
 
+browserで/api/dashboardにいってもgetなので蹴られる。
 
+
+
+- urlは http://www.tumblr.com/api/dashboard
+- methodはPOSTを使う。
+- email/password
+
+wiresharkで見た.getPageはContent-Type headerを自動では付けてくれない!
+ headers = {'Content-Type': 'application/x-www-form-urlencoded'},
 
 
 
