@@ -22,7 +22,7 @@ class Storage(object):
   '''
   def __init__(self, path):
     self.path = path
-    self.load()
+    self.load_index()
 
   def __contains__(self, key):
     return key in self.index 
@@ -42,12 +42,15 @@ class Storage(object):
   def _make_path(self, fname):
     return os.path.join(self.path, fname)
 
-  def set(self, ticket, data):
+  def set(self, ticket, mime, data):
     assert ticket[0] not in self
     url = ticket[0]
     rq = ticket[1]
     ar = time.time()
     print >> sys.stderr, ' %5f s:  %6i byte : %s'%( ar - rq , len(data), url)
+    self.save(url, mime, data)
+
+  def save(self, url, mime, data):
     fname = url2name(url)
     with file(self._make_path(fname), 'w') as f:
       self.index[url] = fname
@@ -72,7 +75,7 @@ class Storage(object):
       os.remove(p)
       del self.index[key]
     
-  def load(self):
+  def load_index(self):
     p = self._make_path('index.pickle')
     
     no_index = False
@@ -93,11 +96,11 @@ class Storage(object):
 
     if no_index: 
       self.index = {}
-      self.save()
+      self.save_index()
 
-  def save(self):
+  def save_index(self):
     p = self._make_path('index.pickle')
-    print self.index
+    print 'saving %i entries'%(len(self.index),)
     with open(p, 'w') as f:
       pickle.dump(self.index, f)
 
@@ -112,7 +115,7 @@ class Storage(object):
         to_delete.append[k]
     for k in to_delete:
       del self.index[k]
-    self.save()
+    self.save_index()
 
 
 class Post(object):

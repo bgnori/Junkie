@@ -18,7 +18,6 @@ with CacheServerProcess() as server:
   with ProxyServerProcess() as proxy:
     sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
 
-
     while True:
       time.sleep(3.0)
 

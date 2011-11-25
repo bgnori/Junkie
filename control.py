@@ -41,12 +41,6 @@ with open('config') as f:
 agent = 'Junkie https://github.com/bgnori/Junkie'
 
 class Controller(xmlrpc.XMLRPC): 
-  def xmlrpc_store_headers(self, snatched):
-    ''' todo: rename and use this for fetch control '''
-    print 'xmlrpc_store_cookie'
-    return None
-
-
   def xmlrpc_on_abacus(self, url):
     '''
       Access to abacus fired by js in browser, to know new arrivals.
@@ -58,37 +52,28 @@ class Controller(xmlrpc.XMLRPC):
         var check_for_new_posts_url = 'http://abacus.tumblr.com/check_for_new_posts/a0146229bf7e844f190e2fcaecc47ab9.js';
         check_for_new_posts(60000);
     '''
-    print time.time(), url
-
-    #if myheaders:
-    if True:
-      data_dict = {'start': 0, 'num': 50}
-      data_dict.update(auth)
-      postdata = urllib.urlencode(data_dict)
-      d = client.getPage('http://www.tumblr.com/api/dashboard', 
-                              method='POST',
-                              agent=agent,
-                              headers = {'Content-Type': 'application/x-www-form-urlencoded'},
-                              postdata=postdata)
-      def nyang(data):
-        print 'Controller:self.nyang'
-        print '-'*50
-        print data[:40]
-        print '-'*50
-
-        if data.startswith('''<!DOCTYPE html PUBLIC "-'''):
-          ''' login '''
-          print 'ugh! login requested.'
-          return None
-            
-        t = etree.XML(data)
-        find = etree.XPath('/tumblr/posts/post')
-        for post in find(t):
-          p = model.PostFactory(post)
-          for u in p.assets_urls():
-            conn.fetch(u)
-          posts.append(p)
-      d.addCallback(nyang).addErrback(printError)
+    data_dict = {'start': 0, 'num': 50}
+    data_dict.update(auth)
+    postdata = urllib.urlencode(data_dict)
+    d = client.getPage('http://www.tumblr.com/api/dashboard', 
+                            method='POST',
+                            agent=agent,
+                            headers = {'Content-Type': 'application/x-www-form-urlencoded'},
+                            postdata=postdata)
+    def update_posts(data):
+      if data.startswith('''<!DOCTYPE html PUBLIC "-'''):
+        ''' login '''
+        print 'ugh! login failed.'
+        return None
+          
+      t = etree.XML(data)
+      find = etree.XPath('/tumblr/posts/post')
+      for post in find(t):
+        p = model.PostFactory(post)
+        for u in p.assets_urls():
+          conn.fetch(u)
+        posts.append(p)
+    d.addCallback(update_posts).addErrback(printError)
 
     return None
 

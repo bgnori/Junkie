@@ -228,5 +228,22 @@ wiresharkで見た.getPageはContent-Type headerを自動では付けてくれ�
  headers = {'Content-Type': 'application/x-www-form-urlencoded'},
 
 
+v2だとOAuthを使う。移行するか？
+-> Web applicationならともかく、desktopアプリでどのくらい意味があるのか？
+--> 古いAPIが使えなくなるならともかく・・・
+
+preferchだけでなく、misしたものもデータが届き次第cacheに入れるようにする。
+dashboardのhtml自体もprefetch/cacheする。必要ならlocalで再構築する、endless scrollに対応する。
+packaging
+ - depotの下じゃなくてpluginsの下にデータを入れる？
+ - 古いデータは消すなり固めるなりしないと、dirの下のfile数が増えすぎる
+Applicationを作る方向に戻る？
+ Qtが入らないのをどうするねん。
+ 今時tkはありえないし... browserがないのは辛いだろう。
+ 外部のplayer(audio/video)を動かしてみたい。
+
+振り返ってみてどうなのか。
+ どこでまずい判断をしたのか。
+ どこでよい判断をしたのか。
 
 

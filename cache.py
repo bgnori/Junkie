@@ -6,6 +6,7 @@ import time
 import subprocess
 from twisted.web import client, xmlrpc, server
 from twisted.internet import reactor
+from twisted.python import log
 
 from xmlrpclib import ServerProxy
 
@@ -25,7 +26,7 @@ class CacheServerProcess(object):
   def __exit__(self, exc_type, exc_value, traceback):
     if self.process.poll() is None:
       print 'trying to terminate cache process'
-      self.server.save()
+      self.server.save_index()
       self.server.terminate()
       #self.process.terminate()
       self.process.wait()
@@ -52,6 +53,9 @@ class CacheServer(xmlrpc.XMLRPC):
     else:
       return None 
 
+  def xmlrpc_save(self, url, mime, data):
+    self.storage.save(url, mime, data)
+
   def xmlrpc_fetch(self, url):
     '''
       if url is not in cache, 
@@ -59,12 +63,13 @@ class CacheServer(xmlrpc.XMLRPC):
     '''
     if url not in self.storage:
       ticket = self.storage.reserve(url)
-      def storePage(data):
-        self.storage.set(ticket, data)
     
-      client.getPage(url)\
-        .addCallback(storePage)\
-        .addErrback(printError)
+      d = client.getPage(url)
+      def storePage(data):
+        mime = 'application/octet-stream' #Ugh! fix me
+        self.storage.set(ticket, mime, data)
+      d.addCallback(storePage)
+      d.addErrback(printError)
   
     return url #Echo.
 
@@ -80,8 +85,8 @@ class CacheServer(xmlrpc.XMLRPC):
   def xmlrpc_count(self):
     return len(self.storage)
 
-  def xmlrpc_save(self):
-    self.storage.save()
+  def xmlrpc_save_index(self):
+    self.storage.save_index()
     return None
 
   def xmlrpc_terminate(self):
@@ -89,10 +94,12 @@ class CacheServer(xmlrpc.XMLRPC):
     return None
 
 if __name__ == '__main__':
-  storage = model.Storage('depot')
-  c = CacheServer(storage, allowNone=True)
-  reactor.listenTCP(9000, server.Site(c))
-  reactor.run()
+  with open('cache.log', 'w') as f:
+    log.startLogging(f)
+    storage = model.Storage('depot')
+    c = CacheServer(storage, allowNone=True)
+    reactor.listenTCP(9000, server.Site(c))
+    reactor.run()
 
-  print 'bye! (cache.py)'
+    print 'bye! (cache.py)'
 
