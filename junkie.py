@@ -12,12 +12,13 @@ from xmlrpclib import ServerProxy
 import model 
 from cache import CacheServerProcess 
 from proxy import ProxyServerProcess 
-from control import Controller
+from control import ControllerServerProcess
 
 with CacheServerProcess() as server:
   with ProxyServerProcess() as proxy:
-    sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
+    with ControllerServerProcess() as controller:
+      sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
 
-    while True:
-      time.sleep(3.0)
+      while True:
+        time.sleep(3.0)
 

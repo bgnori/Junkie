@@ -5,50 +5,47 @@
 import StringIO
 import sys
 from twisted.python import log
-from twisted.web import proxy
+from twisted.web import proxy, xmlrpc
 from xmlrpclib import ServerProxy
 import urlparse
 from cache import Connection
 
-log.startLogging(sys.stdout)
 
 host = 'media.tumblr.com'
 server = Connection()
 
 
-class CacheMiss(object):
+class CacheMissHelper(object):
   def __init__(self, father):
+    print 'CacheMissHelper object made for %s'%(father.uri)
     self.father = father
+    self.content_type = 'application/octet-stream'
     self.content = StringIO.StringIO()
 
-  def handleStatus(self, version, code, message):
-    print code, message
-    self.version = version
+  def setResponseCode(self, code, message=None):
     self.code = int(code)
     self.message = message
 
-  def handleHeader(self, key, value):
-    if key.lower() == 'content type':
-      self.content_type = value
+  def setContetType(self, value):
+    self.content_type = value
 
-  def handleResponsePart(self, buffer):
+  def write(self, buffer):
     self.content.write(buffer)
 
-  def handleResponseEnd(self):
-    if code in (200,):
-      data = self.content.getvalue()
-      server.save(request.uri, self.content_type, data)
+  def finish(self):
+    data = self.content.getvalue()
+    server.save(self.father.uri, self.content_type, xmlrpc.Binary(data))
 
 
 def process(request):
   print 'plugin: media-tumblr is serving'
   cached = server.get(request.uri)
   if not cached:
-    cm = CacheMiss(request)
+    cm = CacheMissHelper(request)
     request.set_peeker(cm)
     proxy.ProxyRequest.process(request)
     return
-  
+   
   parsed = urlparse.urlparse(request.uri)
   path = parsed[2]
   if not path.endswith(('.png','.jpg')):

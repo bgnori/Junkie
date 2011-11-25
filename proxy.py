@@ -11,7 +11,6 @@ from twisted.python import log
 import urlparse
 import subprocess
 import sys
-
  
 
 
@@ -33,6 +32,7 @@ class ProxyServerProcess(object):
  
 class PrefetchProxyClient(proxy.ProxyClient):
   pass
+
 class PrefetchProxyClientFactory(proxy.ProxyClientFactory):
   protocol = PrefetchProxyClient 
 
@@ -52,35 +52,30 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
     self.peeker = None
 
   def set_peeker(self, peeker):
+    print 'peeker is set'
     self.peeker = peeker
 
-  def handleStatus(self, version, code, message):
-    proxy.ProxyRequest.handleStatus(self, version, code, message)
+  def setResponseCode(self, code, message=None):
     if self.peeker:
-      self.peeker.handleStatus(version, code, message)
+      self.peeker.setResponseCode(code, message)
+    proxy.ProxyRequest.setResponseCode(self, code, message)
 
-  def handleHeader(self, key, value):
-    proxy.ProxyRequest.handleHeader(self, key, value)
+  def write(self, buffer):
+    '''
+      E: 63,2:PrefetchProxyRequest.write: An attribute affected in twisted.web.http line 940 hide this method
+    '''
     if self.peeker:
-      self.peeker.handleHeader(key, value)
+      self.peeker.write(buffer)
+    proxy.ProxyRequest.write(self, buffer)
 
-  def handleResponsePart(self, buffer):
-    proxy.ProxyRequest.handleResponsePart(self, buffer)
+  def finish(self):
     if self.peeker:
-      self.peeker.handleResponsePart(key, value)
+      mimes = self.responseHeaders.getRawHeaders('content-type', ['application/octet-stream'])
+      self.peeker.setContetType(mimes[0])
+      self.peeker.finish()
+    proxy.ProxyRequest.finish(self)
+  
 
-  def handleResponseEnd(self):
-    proxy.ProxyRequest.handleResponseEnd(self)
-    if self.peeker:
-      self.peeker.handleResponseEnd()
-
-  def on_cache_miss(self, receiver):
-    receiver('hoge')
-    proxy.ProxyRequest.process(self)
-    
-  def on_cache_wait(self, producer):
-    pass
-    
   def process(self):
     '''
       if domain in target and  prefetched
@@ -114,5 +109,4 @@ if __name__ == '__main__':
     reactor.listenTCP(8080, PrefetchProxyFactory())
     reactor.run()
     print 'bye! (proxy.py)'
-
 

@@ -11,6 +11,7 @@ import urllib
 
 #import zlib
 import gzip
+import subprocess
 
 from lxml import etree
 from xmlrpclib import ServerProxy
@@ -25,7 +26,21 @@ import model
 
 sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
 
-log.startLogging(sys.stdout)
+class ControllerServerProcess(object):
+  process = None
+  server = None
+  def __enter__(self):
+    self.process = subprocess.Popen(['python', 'control.py'])
+    return None
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    if self.process.poll() is None:
+      print 'trying to terminate controller process'
+      self.process.terminate()
+      self.process.wait()
+      print 'controller process looks terminated.'
+    return False
+
 
 def printError(failure):
   print >> sys.stderr, "Error", failure.getErrorMessage()
@@ -79,7 +94,9 @@ class Controller(xmlrpc.XMLRPC):
 
 
 if __name__ == '__main__':
-  c = Controller(allowNone=True)  
-  reactor.listenTCP(9001, server.Site(c))
-  reactor.run()
+  with open('control.log', 'w') as f:
+    log.startLogging(f)
+    c = Controller(allowNone=True)  
+    reactor.listenTCP(9001, server.Site(c))
+    reactor.run()
 

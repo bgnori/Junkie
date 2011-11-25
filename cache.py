@@ -26,9 +26,11 @@ class CacheServerProcess(object):
   def __exit__(self, exc_type, exc_value, traceback):
     if self.process.poll() is None:
       print 'trying to terminate cache process'
-      self.server.save_index()
-      self.server.terminate()
-      #self.process.terminate()
+      try:
+        self.server.save_index()
+      except:
+        print 'failed to save index!'
+      self.process.terminate()
       self.process.wait()
       print 'cache process looks terminated.'
     return False
@@ -54,7 +56,8 @@ class CacheServer(xmlrpc.XMLRPC):
       return None 
 
   def xmlrpc_save(self, url, mime, data):
-    self.storage.save(url, mime, data)
+    print 'saving %s as %s'%(url, mime)
+    self.storage.save(url, mime, data.data)
 
   def xmlrpc_fetch(self, url):
     '''
@@ -63,7 +66,7 @@ class CacheServer(xmlrpc.XMLRPC):
     '''
     if url not in self.storage:
       ticket = self.storage.reserve(url)
-    
+
       d = client.getPage(url)
       def storePage(data):
         mime = 'application/octet-stream' #Ugh! fix me
