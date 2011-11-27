@@ -247,3 +247,26 @@ Applicationを作る方向に戻る？
  どこでよい判断をしたのか。
 
 
+plugins/media-tumblr.py
+def process(request):
+  print 'plugin: media-tumblr is serving'
+  cached = server.get(request.uri)
+  if not cached:
+    cm = CacheMissHelper(request)
+
+ここでcachedのかわりにdeferredを返すとどうなのか？
+もしくはcachedかdeferredにする。
+
+deferredがprocessをまたいでしまう(orz)
+cache と proxyを統合する？
+
+deferredをとることができると、すべてcacheにあった扱いにできる。
+fetch中にrequestがきた場合も統合できそう。
+これならQueueとかpoolがいらない。
+
+proxyとcacheが分離しているメリットは？
+rep? blockingの回避
+
+file IO
+
+
