@@ -269,4 +269,18 @@ rep? blockingの回避
 
 file IO
 
+sigle processというbranchを切った。
+cacheのprocessを廃止する方向で。
+storageを作って保持させるタイミングが分からない。
+Proxyを実体化させるときか？
+あとhandler側どのように触ることができるのか？
+
+
+timingはallContentReceivedの直後にrequestに対して
+Cacheのインスタンスを渡すなりするのがよさげだが、
+requestをとれない. channelのqueueから削除されてしまう。
+allHeadersReceivedならqueueのケツにいる。
+
+Channelインスタンス(PrefetchProxyClientの祖先)
+
 

@@ -44,6 +44,7 @@ class CacheServer(xmlrpc.XMLRPC):
   def __init__(self, storage, *args, **kw):
     xmlrpc.XMLRPC.__init__(self, *args, **kw)
     self.storage = storage
+    self.pool = {}
 
   def xmlrpc_get(self, url):
     '''
@@ -59,6 +60,7 @@ class CacheServer(xmlrpc.XMLRPC):
     print 'saving %s as %s'%(url, mime)
     self.storage.save(url, mime, data.data)
 
+
   def xmlrpc_fetch(self, url):
     '''
       if url is not in cache, 
@@ -66,11 +68,16 @@ class CacheServer(xmlrpc.XMLRPC):
     '''
     if url not in self.storage:
       ticket = self.storage.reserve(url)
+      self.pool.update({ticket: ()})
 
       d = client.getPage(url)
       def storePage(data):
         mime = 'application/octet-stream' #Ugh! fix me
         self.storage.set(ticket, mime, data)
+        callbacks = self.pool.pop(ticket)
+        for c in callbacks:
+          c.call() #Ugh! use deferred
+        
       d.addCallback(storePage)
       d.addErrback(printError)
   

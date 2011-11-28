@@ -6,6 +6,7 @@ import os
 import os.path
 import time
 import pickle
+import StringIO
 from lxml import etree
 
 def url2name(url):
@@ -14,7 +15,24 @@ def url2name(url):
 
 
 def assemble(url, rqtime, artime, data):
+  '''
+    ticket must be hashable.
+  '''
   return (url, rqtime, artime, data)
+
+
+class DataFile(StringIO.StringIO):
+  def __init__(self, *args, **kws):
+    StringIO.StringIO.__init__(self, *args, **kws)
+    self.contentType = 'application/octet-stream' #default
+    self.message = ''
+  
+  def clone(self):
+    x = DataFile(self.getvalue())
+    x.contentType = self.contentType
+    x.message = self.message
+    return x 
+
 
 class Storage(object):
   '''
@@ -23,6 +41,7 @@ class Storage(object):
   def __init__(self, path):
     self.path = path
     self.load_index()
+    self.pool = {} #.update({ticket: ()})
 
   def __contains__(self, key):
     return key in self.index 
@@ -36,8 +55,25 @@ class Storage(object):
 
   def reserve(self, key):
     assert key not in self
+    ticket = self.pool.get(key, None)
+    if ticket:
+      return ticket
     ticket = assemble(key , time.time(), None, None)
+    self.pool.update({ticket:[]})
     return ticket
+
+  def isPrimaryTicket(self, ticket):
+    assert ticket in self.pool
+    return len(self.pool[ticket]) == 0
+
+  def callbackPairs(self, ticket):
+    for pair in self.pool.get(ticket):
+      yield pair
+
+  def register(self, ticket, callback):
+    t = self.pool.get(ticket) 
+    t.append[callback]
+    self.pool[ticket] = t
 
   def _make_path(self, fname):
     return os.path.join(self.path, fname)

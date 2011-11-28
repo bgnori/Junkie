@@ -5,12 +5,16 @@
   http://wiki.python.org/moin/Twisted-Examples
 '''
 
-from twisted.web import proxy, http
-from twisted.internet import reactor
-from twisted.python import log
 import urlparse
 import subprocess
 import sys
+
+from twisted.web import proxy, http
+from twisted.internet import reactor, defer
+from twisted.python import log
+
+import model
+
  
 
 
@@ -33,24 +37,31 @@ class ProxyServerProcess(object):
 class PrefetchProxyClient(proxy.ProxyClient):
   pass
 
+
+
 class PrefetchProxyClientFactory(proxy.ProxyClientFactory):
   protocol = PrefetchProxyClient 
 
 
 class PrefetchProxyRequest(proxy.ProxyRequest):
   '''
+    request object which describse HTTP request from client.    
+    proxy may make requet during process to fulfill it, such as:
+
     in proxy.ProxyRequest.process:
     s = self.content.read()
     clientFactory = class_(self.method, rest, self.clientproto, headers,
                            s, self)
     self.reactor.connectTCP(host, port, clientFactory)
+
+    or may read cache.
   '''
   protocols = {'http': PrefetchProxyClientFactory}
 
   def __init__(self, channel, queued, reactor=reactor):
     proxy.ProxyRequest.__init__(self, channel, queued, reactor=reactor)
     self.peeker = None
-
+  
   def set_peeker(self, peeker):
     print 'peeker is set'
     self.peeker = peeker
@@ -78,35 +89,72 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
 
   def process(self):
     '''
-      if domain in target and  prefetched
-        get it from cache.
-      else:
-        use ordinary request
+      invoke plugin on intended host
     '''
+
     parsed = urlparse.urlparse(self.uri)
     host = parsed[1]
+    if True:
+      proxy.ProxyRequest.process(self)
     m = plugins.get_mapper()
     matched = m.postfix(host)
+
     if len(matched) == 1:
       plugin_mod = matched.pop()
-      plugin_mod.process(self)
+      d = plugin_mod.resolve(self)
+      '''
+        There are 3 possibilities
+        a) not in cache, not requested
+        b) not in cache, but requested
+        c) in cache
+        any case plugin must return deferred with DataFile instance.
+        when it gets ready, we read it and write the response to fulfill the original request.
+      '''
+      def onReadyToRead(f):
+        self.setResponseCode(200, f.message)
+        self.responseHeaders.addRawHeader("Content-Type", f.contentType)
+        self.write(f.read())
+        f.close()
+        self.finish()
+      d.addCallback(onReadyToRead)
+      #d.errback()
     elif len(matched) > 1:
       print 'ambiguous match', host
       proxy.ProxyRequest.process(self)
     else:
       proxy.ProxyRequest.process(self)
 
+
 class PrefetchProxy(proxy.Proxy):
+  '''
+  copied from twited.web.proxy
+    
+    """
+
+    This class implements a simple web proxy.
+
+    Since it inherits from L{twisted.protocols.http.HTTPChannel}, to use it you
+    should do something like this::
+
+        from twisted.web import http
+        f = http.HTTPFactory()
+        f.protocol = Proxy
+
+    Make the HTTPFactory a listener on a port as per usual, and you have
+    a fully-functioning web proxy!
+    """
+  '''
   requestFactory = PrefetchProxyRequest
+
 
 class PrefetchProxyFactory(http.HTTPFactory):
   protocol = PrefetchProxy
 
+
 if __name__ == '__main__':
-  with open('proxy.log', 'w') as f:
-    log.startLogging(f)
-    import plugins
-    reactor.listenTCP(8080, PrefetchProxyFactory())
-    reactor.run()
-    print 'bye! (proxy.py)'
+  import plugins
+  reactor.listenTCP(8080, PrefetchProxyFactory('proxy.log'))
+  reactor.run()
+  print 'bye! (proxy.py)'
+
 

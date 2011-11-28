@@ -2,66 +2,70 @@
 # -*- coding=utf8 -*-
 
 
-import StringIO
-import sys
-from twisted.python import log
-from twisted.web import proxy, xmlrpc
-from xmlrpclib import ServerProxy
 import urlparse
-from cache import Connection
 
+from twisted.web import client
+from twisted.internet import reactor, defer
+
+import model
 
 host = 'media.tumblr.com'
-server = Connection()
+storage = model.Storage('depot')
 
 
-class CacheMissHelper(object):
-  def __init__(self, father):
-    print 'CacheMissHelper object made for %s'%(father.uri)
-    self.father = father
-    self.content_type = 'application/octet-stream'
-    self.content = StringIO.StringIO()
 
-  def setResponseCode(self, code, message=None):
-    self.code = int(code)
-    self.message = message
-
-  def setContetType(self, value):
-    self.content_type = value
-
-  def write(self, buffer):
-    self.content.write(buffer)
-
-  def finish(self):
-    data = self.content.getvalue()
-    server.save(self.father.uri, self.content_type, xmlrpc.Binary(data))
-
-
-def process(request):
+def resolve(request):
   print 'plugin: media-tumblr is serving'
-  cached = server.get(request.uri)
+  
+  url = request.uri
+  cached = storage.get(url)
   if not cached:
-    cm = CacheMissHelper(request)
-    request.set_peeker(cm)
-    proxy.ProxyRequest.process(request)
-    return
-   
-  parsed = urlparse.urlparse(request.uri)
-  path = parsed[2]
-  if not path.endswith(('.png','.jpg')):
-    print 'not image, do not know how to add header :(', path
-    proxy.ProxyRequest.process(request)
-    return
-  print 'plugin: tumblr found %s in cache.'%(request.uri,)
-
-  request.setResponseCode(200, "found in cache")
-  if path.endswith('jpg'):
-    request.responseHeaders.addRawHeader("Content-Type", "image/jpeg")
-  elif path.endswith('png'):
-    request.responseHeaders.addRawHeader("Content-Type", "image/png")
+    ticket = storage.reserve(url)
+    if storage.isPrimaryTicket(ticket):
+      d = client.getPage(url)
+      def onPageArrival(data):
+        f = model.DataFile(data)
+        mime = 'application/octet-stream' #FIXME
+        storage.set(ticket, mime, data)
+        f.content_type = mime
+        f.message = 'OK'
+        for consumer, fail in storage.callbackPairs(ticket):
+          reactor.callLater(0, consumer, f.clone())
+        return f
+      d.addCallback(onPageArrival)
+      def onFail(f):#FIXME
+        for consumer, fail in storage.callbackPairs(ticket):
+          reactor.callLater(0, fail, f.clone())
+        return 'fail' #FIXME
+      d.errback(onFail) 
+    else:
+      def consumer(f):
+        return f
+      def fail(f):
+        f.close()
+        return 'fail' #FIXME
+      storage.register(ticket, (consumer, fail))
   else:
-    assert False
-  request.write(cached.data)
-  request.finish()
+    assert cached
+    d = defer.Deferred()
+    def xxx():
+      parsed = urlparse.urlparse(request.uri)
+      path = parsed[2]
+      if not path.endswith(('.png','.jpg')):
+        print 'not image, do not know how to add header :(', path
+        raise
+      print 'plugin: tumblr found %s in cache.'%(request.uri,)
+
+      f = model.DataFile(cached)
+      f.message = "OK found in cache"
+      if path.endswith('jpg'): #FIXME
+        f.contentType = "image/jpeg"
+      elif path.endswith('png'):
+        f.contentType = "image/png"
+      else:
+        assert False
+      return f
+    d.addCallback(xxx)
+  return d
 
 
