@@ -58,35 +58,6 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
   '''
   protocols = {'http': PrefetchProxyClientFactory}
 
-  def __init__(self, channel, queued, reactor=reactor):
-    proxy.ProxyRequest.__init__(self, channel, queued, reactor=reactor)
-    self.peeker = None
-  
-  def set_peeker(self, peeker):
-    print 'peeker is set'
-    self.peeker = peeker
-
-  def setResponseCode(self, code, message=None):
-    if self.peeker:
-      self.peeker.setResponseCode(code, message)
-    proxy.ProxyRequest.setResponseCode(self, code, message)
-
-  def write(self, buffer):
-    '''
-      E: 63,2:PrefetchProxyRequest.write: An attribute affected in twisted.web.http line 940 hide this method
-    '''
-    if self.peeker:
-      self.peeker.write(buffer)
-    proxy.ProxyRequest.write(self, buffer)
-
-  def finish(self):
-    if self.peeker:
-      mimes = self.responseHeaders.getRawHeaders('content-type', ['application/octet-stream'])
-      self.peeker.setContetType(mimes[0])
-      self.peeker.finish()
-    proxy.ProxyRequest.finish(self)
-  
-
   def process(self):
     '''
       invoke plugin on intended host
@@ -94,8 +65,11 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
 
     parsed = urlparse.urlparse(self.uri)
     host = parsed[1]
+    '''
     if True:
       proxy.ProxyRequest.process(self)
+      return
+    '''
     m = plugins.get_mapper()
     matched = m.postfix(host)
 

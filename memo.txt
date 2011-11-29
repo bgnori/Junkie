@@ -284,3 +284,10 @@ allHeadersReceivedならqueueのケツにいる。
 Channelインスタンス(PrefetchProxyClientの祖先)
 
 
+とりあえず動くようになったが、なんか画像ファイルが壊れる。とくにpng
+https://github.com/bgnori/Junkie/commit/5cd13327ae66d4d7e8b167f9bdc64036620de8a0
+content-encodingがらみでなにかやらかしているらしい。
+==> なんか変なif文があった orz
+
+
+
