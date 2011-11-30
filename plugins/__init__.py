@@ -19,6 +19,9 @@ def load_plugins():
     if m == '__init__':
       continue
     obj = __import__(m, globals(), locals(), [], -1)
+    if hasattr(obj, "load") and not obj.load:
+      continue
+    print 'loading', obj.host
     _mapper.add(obj.host, obj)
 
 load_plugins()

@@ -16,7 +16,8 @@ from twisted.python import log
 import model
 
  
-
+def printError(failure):
+  print >> sys.stderr, "Error", failure.getErrorMessage()
 
 class ProxyServerProcess(object):
   process = None
@@ -65,11 +66,7 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
 
     parsed = urlparse.urlparse(self.uri)
     host = parsed[1]
-    '''
-    if True:
-      proxy.ProxyRequest.process(self)
-      return
-    '''
+
     m = plugins.get_mapper()
     matched = m.postfix(host)
 
@@ -89,9 +86,9 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
         self.responseHeaders.addRawHeader("Content-Type", f.contentType)
         self.write(f.read())
         f.close()
-        self.finish()
+        #self.finish()
       d.addCallback(onReadyToRead)
-      #d.errback()
+      d.errback(printError)
     elif len(matched) > 1:
       print 'ambiguous match', host
       proxy.ProxyRequest.process(self)
@@ -126,9 +123,10 @@ class PrefetchProxyFactory(http.HTTPFactory):
 
 
 if __name__ == '__main__':
-  import plugins
-  reactor.listenTCP(8080, PrefetchProxyFactory('proxy.log'))
-  reactor.run()
-  print 'bye! (proxy.py)'
-
+  with open('proxy.log', 'w') as f:
+    log.startLogging(f)
+    import plugins
+    reactor.listenTCP(8080, PrefetchProxyFactory())#'proxy.log'))
+    reactor.run()
+    print 'bye! (proxy.py)'
 

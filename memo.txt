@@ -290,4 +290,9 @@ content-encodingがらみでなにかやらかしているらしい。
 ==> なんか変なif文があった orz
 
 
+getPageでは
+http status code 302とかをhandleできない。
+
+
+
 

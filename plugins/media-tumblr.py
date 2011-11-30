@@ -38,13 +38,17 @@ def resolve(request):
           reactor.callLater(0, fail, f.clone())
         return 'fail' #FIXME
       d.errback(onFail) 
+      return d
     else:
+      d = defer.Deferred()
       def consumer(f):
         return f
       def fail(f):
         f.close()
         return 'fail' #FIXME
       storage.register(ticket, (consumer, fail))
+      return d
+    assert False
   else:
     assert cached
     d = defer.Deferred()
@@ -66,6 +70,7 @@ def resolve(request):
         assert False
       return f
     d.addCallback(xxx)
-  return d
+    return d
+  assert False
 
 

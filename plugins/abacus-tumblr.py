@@ -7,6 +7,7 @@ import urlparse
 from control import Connection 
 
 host = 'abacus.tumblr.com'
+load = False
 server = Connection()
 
 
