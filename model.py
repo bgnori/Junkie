@@ -54,7 +54,7 @@ class Storage(object):
       yield self.get(key)
 
   def reserve(self, key):
-    assert key not in self
+    assert key not in self.index
     ticket = self.pool.get(key, None)
     if ticket:
       return ticket
@@ -91,9 +91,11 @@ class Storage(object):
     with file(self._make_path(fname), 'w') as f:
       self.index[url] = fname
       f.write(data)
+      print 'saving:', url, ':', fname
 
   def get(self, key, default=None):
-    p = self.peek_filepath(self, default)
+    p = self.peek_filepath(key, default)
+    print 'Storage:get', key, p
     if p is None:
       return None
     with file(p, 'r') as f:
