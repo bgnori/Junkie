@@ -86,7 +86,7 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
         self.responseHeaders.addRawHeader("Content-Type", f.contentType)
         self.write(f.read())
         f.close()
-        #self.finish()
+        self.finish()
       d.addCallback(onReadyToRead)
       d.addErrback(printError)
     elif len(matched) > 1:

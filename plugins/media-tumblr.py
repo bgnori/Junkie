@@ -27,7 +27,8 @@ def resolve(request):
       def onPageArrival(data):
         f = model.DataFile(data)
         # mime = 'application/octet-stream' #FIXME
-        mime = magic.from_buffer(data) #FIXME, better than above. Don't guess, use header
+        mime = magic.from_buffer(data, mime=True) #FIXME, better than above. Don't guess, use header
+        print mime
         storage.set(ticket, mime, data)
         f.content_type = mime
         f.message = 'OK'
