@@ -59,7 +59,8 @@ def resolve(request):
     assert cached
     print 'cache hit for', url
     d = defer.Deferred()
-    def xxx():
+    def xxx(igonre):
+      print 'psudo get complete'
       parsed = urlparse.urlparse(request.uri)
       path = parsed[2]
       if not path.endswith(('.png','.jpg', '.gif')):
@@ -79,6 +80,7 @@ def resolve(request):
         assert False
       return f
     d.addCallback(xxx)
+    reactor.callLater(0, d.callback, None)
     return d
   assert False
 

@@ -88,7 +88,10 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
         f.close()
         self.finish()
       d.addCallback(onReadyToRead)
-      d.addErrback(printError)
+      def onError(f):
+        self.setResponseCode(500, 'proxy error') #FIXME f.message)
+        self.finish()
+      d.addErrback(onError)
     elif len(matched) > 1:
       print 'ambiguous match', host
       proxy.ProxyRequest.process(self)
