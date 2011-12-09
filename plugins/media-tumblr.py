@@ -3,6 +3,7 @@
 
 
 import urlparse
+import magic
 
 from twisted.web import client
 from twisted.internet import reactor, defer
@@ -25,7 +26,8 @@ def resolve(request):
       d = client.getPage(url)
       def onPageArrival(data):
         f = model.DataFile(data)
-        mime = 'application/octet-stream' #FIXME
+        # mime = 'application/octet-stream' #FIXME
+        mime = magic.from_buffer(data) #FIXME, better than above. Don't guess, use header
         storage.set(ticket, mime, data)
         f.content_type = mime
         f.message = 'OK'
@@ -37,7 +39,7 @@ def resolve(request):
         for consumer, fail in storage.callbackPairs(ticket):
           reactor.callLater(0, fail, f.clone())
         return 'fail' #FIXME
-      d.errback(onFail) 
+      d.addErrback(onFail) 
       return d
     else:
       d = defer.Deferred()
