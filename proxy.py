@@ -126,7 +126,6 @@ class PrefetchProxyFactory(http.HTTPFactory):
 if __name__ == '__main__':
   with open('proxy.log', 'w') as f:
     log.startLogging(f)
-    import tumblr
     import plugins
     reactor.listenTCP(8080, PrefetchProxyFactory())#'proxy.log'))
     reactor.run()

@@ -6,7 +6,6 @@ import urlparse
 
 from lxml import etree
 
-
 from twisted.web import client
 from twisted.internet import reactor
 

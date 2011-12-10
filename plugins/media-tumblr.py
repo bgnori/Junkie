@@ -30,9 +30,7 @@ def process(request):
     d = defer.Deferred()
     def xxx(igonre):
       print >> sys.stderr, 'plugin: making pseudo get, since found in cache, %s'%(url,)
-      f = tumblr.DataFile(cached)
-      f.message = "OK found in cache"
-      f.contentType = magic.from_buffer(cached, mime=True) #FIXME, better than above. Don't guess, use header
+      f = tumblr.DataFile(cached, "OK found in cache") #FIXME Don't guess, use header
       return f
     d.addCallback(xxx)
     reactor.callLater(0, d.callback, None) #there is nothing block it. So fire it.

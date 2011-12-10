@@ -30,17 +30,18 @@ def assemble(url, rqtime, artime, data):
 
 
 class DataFile(StringIO.StringIO):
-  def __init__(self, *args, **kws):
-    StringIO.StringIO.__init__(self, *args, **kws)
-    self.contentType = 'application/octet-stream' #default
-    self.message = ''
+  def __init__(self, data, message, mime=None, dontguess=None):
+    StringIO.StringIO.__init__(self, data)
+    self.message = message
+    if mime:
+      self.contentType = mime
+    elif dontguess:
+      self.contentType = 'application/octet-stream' #default
+    else:
+      self.contentType = magic.from_buffer(data, mime=True) 
   
   def clone(self):
-    x = DataFile(self.getvalue())
-    x.contentType = self.contentType
-    x.message = self.message
-    return x 
-
+    return DataFile(self.getvalue(), self.message, self.contentType)
 
 class Storage(object):
   '''
@@ -411,12 +412,8 @@ def get(url):
   if storage.isPrimaryTicket(ticket):
     d = client.getPage(url)
     def onPageArrival(data):
-      f = DataFile(data)
-      mime = magic.from_buffer(data, mime=True) #FIXME, better than above. Don't guess, use header
-      print mime
-      storage.set(ticket, mime, data)
-      f.content_type = mime
-      f.message = 'OK'
+      f = DataFile(data, 'OK') #FIXME Don't guess, use header
+      storage.set(ticket, f.contentType, data)
       for consumer, fail in storage.callbackPairs(ticket):
         reactor.callLater(0, consumer, f.clone())
       return f
