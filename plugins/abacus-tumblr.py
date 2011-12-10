@@ -30,21 +30,14 @@ def prefetch(uri):
                           agent=tumblr.agent,
                           headers = {'Content-Type': 'application/x-www-form-urlencoded'},
                           postdata=postdata)
-  def update_posts(data):
+  def onDataArrival(data):
     if data.startswith('''<!DOCTYPE html PUBLIC "-'''):
       ''' login '''
       print 'ugh! login failed.'
       return None
+    tumblr.update_posts(data)
         
-    t = etree.XML(data)
-    find = etree.XPath('/tumblr/posts/post')
-    for post in find(t):
-      p = tumblr.PostFactory(post)
-      for u in p.assets_urls():
-        if url not in tumblr.storage:
-          tumblr.get(url)
-      tumblr.posts.append(p)
-  d.addCallback(update_posts).addErrback(printError)
+  d.addCallback(onDataArrival).addErrback(printError)
 
 
 def process(request):

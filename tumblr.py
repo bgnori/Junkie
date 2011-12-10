@@ -440,6 +440,17 @@ def get(url):
     return d
   assert False
 
+
+def update_posts(data):
+  t = etree.XML(data)
+  find = etree.XPath('/tumblr/posts/post')
+  for post in find(t):
+    p = PostFactory(post)
+    for u in p.assets_urls():
+      if url not in storage:
+        get(url)
+    posts.append(p)
+
 '''
   making global values.
 '''
