@@ -13,12 +13,7 @@ from twisted.web import proxy, http
 from twisted.internet import reactor, defer
 from twisted.python import log
 
-import model
-
  
-def printError(failure):
-  print >> sys.stderr, "Error", failure.getErrorMessage()
-
 class ProxyServerProcess(object):
   process = None
   server = None
@@ -131,6 +126,7 @@ class PrefetchProxyFactory(http.HTTPFactory):
 if __name__ == '__main__':
   with open('proxy.log', 'w') as f:
     log.startLogging(f)
+    import tumblr
     import plugins
     reactor.listenTCP(8080, PrefetchProxyFactory())#'proxy.log'))
     reactor.run()

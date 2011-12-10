@@ -9,6 +9,7 @@ import pickle
 import StringIO
 from lxml import etree
 
+
 def url2name(url):
   parsed = urlparse.urlparse(url)
   return os.path.basename(parsed[2])#'path'
@@ -36,12 +37,13 @@ class DataFile(StringIO.StringIO):
 
 class Storage(object):
   '''
-    may be not right to place this class in model.py
+    Storage to hold cached contents
   '''
   def __init__(self, path):
     self.path = path
     self.load_index()
     self.pool = {} #.update({ticket: ()})
+    print >> sys.stderr, 'Storage with %s is ready'%(self.path,)
 
   def __contains__(self, key):
     return key in self.index 
@@ -393,6 +395,5 @@ class HTMLRenderer(Renderer):
     return self.make_html(tree)
 
 storage = Storage('depot') #FIXME
-
 
 

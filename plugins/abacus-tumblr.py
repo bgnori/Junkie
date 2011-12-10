@@ -7,10 +7,12 @@ import yaml
 
 from lxml import etree
 
+import magic
+
 from twisted.web import client
 from twisted.internet import reactor
 
-import model
+import tumblr
 
 host = 'abacus.tumblr.com'
 load = True
@@ -26,19 +28,19 @@ def printError(failure):
 
 def fetch(url):
   d = None
-  if url not in model.storage:
+  if url not in tumblr.storage:
     print 'prefetching ', url
-    ticket = model.storage.reserve(url)
+    ticket = tumblr.storage.reserve(url)
 
     d = client.getPage(url)
     def onPageArrival(data):
       # mime = 'application/octet-stream' #Ugh! fix me
       mime = magic.from_buffer(data, mime=True) #FIXME, better than above. Don't guess, use header
-      model.storage.set(ticket, mime, data)
-      for consumer, fail in model.storage.callbackPairs(ticket):
+      tumblr.storage.set(ticket, mime, data)
+      for consumer, fail in tumblr.storage.callbackPairs(ticket):
         reactor.callLater(0, consumer, f.clone())
     def onFail(f):#FIXME
-      for consumer, fail in model.storage.callbackPairs(ticket):
+      for consumer, fail in tumblr.storage.callbackPairs(ticket):
         reactor.callLater(0, fail, f.clone())
       return 'fail' #FIXME
     d.addCallback(onPageArrival)
@@ -65,7 +67,7 @@ def prefetch(uri):
     t = etree.XML(data)
     find = etree.XPath('/tumblr/posts/post')
     for post in find(t):
-      p = model.PostFactory(post)
+      p = tumblr.PostFactory(post)
       for u in p.assets_urls():
         fetch(u)
       posts.append(p)
@@ -77,3 +79,6 @@ def process(request):
   print 'plugin: abacus.tumblr is serving'
   reactor.callLater(0.1, prefetch, request.uri)
   return None
+
+if __name__ == '__main__':
+  print auth
