@@ -83,7 +83,7 @@ class Storage(object):
     url = ticket[0]
     rq = ticket[1]
     ar = time.time()
-    print >> sys.stderr, ' %5f s:  %6i byte : %s'%( ar - rq , len(data), url)
+    print >> sys.stderr, 'filling storage with %5f s:  %6i byte : %s'%( ar - rq , len(data), url)
     self.save(url, mime, data)
 
   def save(self, url, mime, data):
@@ -391,5 +391,8 @@ class HTMLRenderer(Renderer):
   def render(self, post):
     tree = post.build_tree()
     return self.make_html(tree)
+
+storage = Storage('depot') #FIXME
+
 
 

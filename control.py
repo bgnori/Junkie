@@ -7,7 +7,6 @@ import time
 import codecs
 
 import urlparse
-import urllib
 
 #import zlib
 import gzip

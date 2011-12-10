@@ -72,26 +72,29 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
 
     if len(matched) == 1:
       plugin_mod = matched.pop()
-      d = plugin_mod.resolve(self)
-      '''
-        There are 3 possibilities
-        a) not in cache, not requested
-        b) not in cache, but requested
-        c) in cache
-        any case plugin must return deferred with DataFile instance.
-        when it gets ready, we read it and write the response to fulfill the original request.
-      '''
-      def onReadyToRead(f):
-        self.setResponseCode(200, f.message)
-        self.responseHeaders.addRawHeader("Content-Type", f.contentType)
-        self.write(f.read())
-        f.close()
-        self.finish()
-      d.addCallback(onReadyToRead)
-      def onError(f):
-        self.setResponseCode(500, 'proxy error') #FIXME f.message)
-        self.finish()
-      d.addErrback(onError)
+      d = plugin_mod.process(self)
+      if isinstance(d, defer.Deferred):
+        '''
+          There are 3 possibilities
+          a) not in cache, not requested
+          b) not in cache, but requested
+          c) in cache
+          any case plugin must return deferred with DataFile instance.
+          when it gets ready, we read it and write the response to fulfill the original request.
+        '''
+        def onReadyToRead(f):
+          self.setResponseCode(200, f.message)
+          self.responseHeaders.addRawHeader("Content-Type", f.contentType)
+          self.write(f.read())
+          f.close()
+          self.finish()
+        d.addCallback(onReadyToRead)
+        def onError(f):
+          self.setResponseCode(500, 'proxy error') #FIXME f.message)
+          self.finish()
+        d.addErrback(onError)
+      else:
+        proxy.ProxyRequest.process(self)
     elif len(matched) > 1:
       print 'ambiguous match', host
       proxy.ProxyRequest.process(self)

@@ -11,11 +11,12 @@ from twisted.internet import reactor, defer
 import model
 
 host = 'media.tumblr.com'
-storage = model.Storage('depot')
+
+storage = model.storage
 
 
 
-def resolve(request):
+def process(request):
   print 'plugin: media-tumblr is serving'
   
   url = request.uri
@@ -27,7 +28,6 @@ def resolve(request):
       d = client.getPage(url)
       def onPageArrival(data):
         f = model.DataFile(data)
-        # mime = 'application/octet-stream' #FIXME
         mime = magic.from_buffer(data, mime=True) #FIXME, better than above. Don't guess, use header
         print mime
         storage.set(ticket, mime, data)
@@ -80,7 +80,7 @@ def resolve(request):
         assert False
       return f
     d.addCallback(xxx)
-    reactor.callLater(0, d.callback, None)
+    reactor.callLater(0, d.callback, None) #there is nothing block it. So fire it.
     return d
   assert False
 
