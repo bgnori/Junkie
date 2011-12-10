@@ -26,27 +26,6 @@ agent = 'Junkie https://github.com/bgnori/Junkie'
 def printError(failure):
   print >> sys.stderr, "Error", failure.getErrorMessage()
 
-def fetch(url):
-  d = None
-  if url not in tumblr.storage:
-    print 'prefetching ', url
-    ticket = tumblr.storage.reserve(url)
-
-    d = client.getPage(url)
-    def onPageArrival(data):
-      # mime = 'application/octet-stream' #Ugh! fix me
-      mime = magic.from_buffer(data, mime=True) #FIXME, better than above. Don't guess, use header
-      tumblr.storage.set(ticket, mime, data)
-      for consumer, fail in tumblr.storage.callbackPairs(ticket):
-        reactor.callLater(0, consumer, f.clone())
-    def onFail(f):#FIXME
-      for consumer, fail in tumblr.storage.callbackPairs(ticket):
-        reactor.callLater(0, fail, f.clone())
-      return 'fail' #FIXME
-    d.addCallback(onPageArrival)
-    d.addErrback(onFail) 
-  return d
-
 def prefetch(uri):
   print 'abacus-tumblr.py:prefetch'
 
@@ -69,7 +48,8 @@ def prefetch(uri):
     for post in find(t):
       p = tumblr.PostFactory(post)
       for u in p.assets_urls():
-        fetch(u)
+        if url not in tumblr.storage:
+          tumblr.get(url)
       posts.append(p)
   d.addCallback(update_posts).addErrback(printError)
 

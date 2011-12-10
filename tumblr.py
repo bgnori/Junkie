@@ -7,7 +7,13 @@ import os.path
 import time
 import pickle
 import StringIO
+
+
 from lxml import etree
+import magic
+
+
+from twisted.web import client
 
 
 def url2name(url):
@@ -396,4 +402,37 @@ class HTMLRenderer(Renderer):
 
 storage = Storage('depot') #FIXME
 
+
+def get(url):
+  ticket = storage.reserve(url)
+  if storage.isPrimaryTicket(ticket):
+    d = client.getPage(url)
+    def onPageArrival(data):
+      f = DataFile(data)
+      mime = magic.from_buffer(data, mime=True) #FIXME, better than above. Don't guess, use header
+      print mime
+      storage.set(ticket, mime, data)
+      f.content_type = mime
+      f.message = 'OK'
+      for consumer, fail in storage.callbackPairs(ticket):
+        reactor.callLater(0, consumer, f.clone())
+      return f
+    d.addCallback(onPageArrival)
+    def onFail(f):#FIXME
+      for consumer, fail in storage.callbackPairs(ticket):
+        reactor.callLater(0, fail, f.clone())
+      return 'fail' #FIXME
+    d.addErrback(onFail) 
+    return d
+  else:
+    d = defer.Deferred()
+    print 'case not primary ticket'
+    def consumer(f):
+      print 'consumer', f.getvalue()[:40]
+      return f
+    def fail(f):
+      f.close()
+      return 'fail' #FIXME
+    storage.register(ticket, (consumer, fail))
+    return d
 
