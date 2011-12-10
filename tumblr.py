@@ -11,6 +11,7 @@ import StringIO
 
 from lxml import etree
 import magic
+import yaml
 
 
 from twisted.web import client
@@ -400,10 +401,12 @@ class HTMLRenderer(Renderer):
     tree = post.build_tree()
     return self.make_html(tree)
 
-storage = Storage('depot') #FIXME
-
 
 def get(url):
+  '''
+    retrieve content.
+
+  '''
   ticket = storage.reserve(url)
   if storage.isPrimaryTicket(ticket):
     d = client.getPage(url)
@@ -435,4 +438,16 @@ def get(url):
       return 'fail' #FIXME
     storage.register(ticket, (consumer, fail))
     return d
+  assert False
+
+'''
+  making global values.
+'''
+
+storage = Storage('depot') #FIXME
+posts = []
+with open('config') as f:
+  auth = yaml.load(f.read())
+agent = 'Junkie https://github.com/bgnori/Junkie'
+
 
