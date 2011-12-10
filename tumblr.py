@@ -1,13 +1,14 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
 import sys
-import urlparse
 import os
 import os.path
 import time
 import pickle
 import StringIO
 
+import urllib
+import urlparse
 
 from lxml import etree
 import magic
@@ -15,6 +16,10 @@ import yaml
 
 
 from twisted.web import client
+from twisted.internet import defer, reactor
+
+def printError(failure):
+  print >> sys.stderr, "Error", failure.getErrorMessage()
 
 
 def url2name(url):
@@ -403,59 +408,95 @@ class HTMLRenderer(Renderer):
     return self.make_html(tree)
 
 
-def get(url):
-  '''
-    retrieve content.
+class Junkie(object):
+  agent = 'Junkie https://github.com/bgnori/Junkie'
 
-  '''
-  ticket = storage.reserve(url)
-  if storage.isPrimaryTicket(ticket):
+  def __init__(self):
+    self.posts = []
+    self.storage = Storage('depot')
+    with open('config') as f:
+      self.auth = yaml.load(f.read())
+
+  def cache_get(self, url):
+    '''
+      retrieve content from cache.
+      returns DataFile object
+    '''
+    return self.storage.get(url) 
+
+  def _primary_get(self, ticket):
+    url = ticket[0] #FIXME
     d = client.getPage(url)
     def onPageArrival(data):
       f = DataFile(data, 'OK') #FIXME Don't guess, use header
-      storage.set(ticket, f.contentType, data)
-      for consumer, fail in storage.callbackPairs(ticket):
+      self.storage.set(ticket, f.contentType, data)
+      for consumer, fail in self.storage.callbackPairs(ticket):
         reactor.callLater(0, consumer, f.clone())
       return f
     d.addCallback(onPageArrival)
     def onFail(f):#FIXME
-      for consumer, fail in storage.callbackPairs(ticket):
+      for consumer, fail in self.storage.callbackPairs(ticket):
         reactor.callLater(0, fail, f.clone())
       return 'fail' #FIXME
     d.addErrback(onFail) 
     return d
-  else:
+
+  def _secondary_get(self, ticket):
     d = defer.Deferred()
-    print 'case not primary ticket'
     def consumer(f):
       print 'consumer', f.getvalue()[:40]
       return f
     def fail(f):
       f.close()
       return 'fail' #FIXME
-    storage.register(ticket, (consumer, fail))
+    self.storage.register(ticket, (consumer, fail))
     return d
-  assert False
+    
+  def web_get(self, url):
+    '''
+      retrieve content from web.
+      returns deferred.
+   '''
+    ticket = self.storage.reserve(url)
+    if self.storage.isPrimaryTicket(ticket):
+      return self._primary_get(ticket)
+    else:
+      return self._secondary_get(ticket)
+
+  def prefetch(self, uri):
+    data_dict = {'start': 0, 'num': 50}
+    data_dict.update(self.auth)
+    postdata = urllib.urlencode(data_dict)
+    d = client.getPage('http://www.tumblr.com/api/dashboard', 
+                            method='POST',
+                            agent=self.agent,
+                            headers = {'Content-Type': 'application/x-www-form-urlencoded'},
+                            postdata=postdata)
+    def onDataArrival(data):
+      if data.startswith('''<!DOCTYPE html PUBLIC "-'''):
+        ''' login '''
+        print 'ugh! login failed.'
+        return None
+      self.update_posts(data)
+    d.addCallback(onDataArrival).addErrback(printError)
 
 
-def update_posts(data):
-  t = etree.XML(data)
-  find = etree.XPath('/tumblr/posts/post')
-  for post in find(t):
-    p = PostFactory(post)
-    for url in p.assets_urls():
-      if url not in storage:
-        get(url)
-    posts.append(p)
+  def update_posts(self, xmldata):
+    '''
+      parse v1 XML data and store posts.
+    '''
+    t = etree.XML(xmldata)
+    find = etree.XPath('/tumblr/posts/post')
+    for post in find(t):
+      p = PostFactory(post)
+      for url in p.assets_urls():
+        if url not in self.storage:
+          self.web_get(url)
+      self.posts.append(p)
 
 '''
   making global values.
 '''
-
-storage = Storage('depot') #FIXME
-posts = []
-with open('config') as f:
-  auth = yaml.load(f.read())
-agent = 'Junkie https://github.com/bgnori/Junkie'
+junkie = Junkie()
 
 

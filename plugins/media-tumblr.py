@@ -19,11 +19,11 @@ def process(request):
   print 'plugin: media-tumblr is serving'
   
   url = request.uri
-  cached = tumblr.storage.get(url) 
+  cached = tumblr.junkie.cache_get(url) 
   #FIXME we should have file object for this, not buffer/data
   if not cached:
     print 'cache miss', url
-    return tumblr.get(url)
+    return tumblr.junkie.web_get(url)
   else:
     assert cached
     print 'cache hit for', url
@@ -39,5 +39,5 @@ def process(request):
 
 
 if __name__ == '__main__':
-  print tumblr.storage
+  print tumblr.junkie
   
