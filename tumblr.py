@@ -324,9 +324,7 @@ class Junkie(object):
         self.get(url)
       self.posts.append(p)
 
-'''
-  making global values.
-'''
-junkie = Junkie()
 
+
+junkie = Junkie()
 

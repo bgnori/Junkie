@@ -15,7 +15,7 @@ load = True
 
 def process(request):
   print 'plugin: abacus.tumblr is serving'
-  reactor.callLater(0.1, tumblr.junkie.prefetch, request.uri)
+  reactor.callLater(0.1, tumblr.junkie.prefetch, request.uri) #FIXME
   return None
 
 if __name__ == '__main__':

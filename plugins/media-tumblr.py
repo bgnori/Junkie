@@ -1,14 +1,6 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
 
-import sys
-
-import urlparse
-import magic
-
-from twisted.web import client
-from twisted.internet import reactor, defer
-
 import tumblr
 
 host = 'media.tumblr.com'
@@ -21,6 +13,4 @@ def process(request):
   entry = tumblr.junkie.get(url) 
   return entry.read()
 
-if __name__ == '__main__':
-  print tumblr.junkie
   
