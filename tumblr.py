@@ -48,6 +48,67 @@ class DataFile(StringIO.StringIO):
   def clone(self):
     return DataFile(self.getvalue(), self.message, self.contentType)
 
+
+
+class CacheEntry(object):
+  def __init__(self, key, path):
+    self.path = None
+    self.key = key
+    self.readRequests = []
+    self.datafile = None
+    self.fname = None
+    self.message = None
+
+  def _make_path(self):
+    return os.path.join(self.path, self.fname)
+
+  def _read(self):
+    return self.datafile.clone()
+
+  def read(self):
+    d = defer.Deferred()
+    self.readRequests.append(d)
+    if self.datafile:
+      print >> sys.stderr, 'immediate read for %s'%(self.key,)
+      self.onReadyToRead()
+    else:
+      print >> sys.stderr, 'waiting web for %s'%(self.key,)
+    return d
+    
+  def abort(self):
+    for d in self.readRequests:
+      reactor.callLater(0, d.errback, None)
+    self.readRequests = []
+
+  def onReadyToRead(self):
+    assert self.datafile
+    for d in self.readRequests:
+      reactor.callLater(0, d.callback, self._read()) 
+    self.readRequests = []
+
+  def write(self, datafile):
+    assert not self.datafile
+    self.datafile = datafile.clone()
+    self.onReadyToRead()
+
+  def writeToFile(self):
+    assert self.datafile
+    p = self._make_path()
+    with open(p, 'w') as f:
+      f.write(self.datafile.read())
+      self.message = self.datafile.message
+      self.contentType = self.datafile.contentType
+      self.datafile = None
+    
+  def readFromFile(self):
+    p = self._make_path()
+    with open(p, 'w') as f:
+      self.datafile = DataFile(f.read(), self.message, self.contentType)
+    if self.datafile:
+      self.onReadyToRead()
+   
+
+
 class Storage(object):
   '''
     Storage to hold cached contents
@@ -55,78 +116,33 @@ class Storage(object):
   def __init__(self, path):
     self.path = path
     self.load_index()
-    self.pool = {} #.update({ticket: ()})
-    print >> sys.stderr, 'Storage with %s is ready'%(self.path,)
 
   def __contains__(self, key):
     return key in self.index 
 
   def __len__(self):
-    pass
+    return len(self.index)
   
   def __iter__(self):
-    for key in self.index.keys():
-      yield self.get(key)
-
-  def reserve(self, key):
-    assert key not in self.index
-    ticket = self.pool.get(key, None)
-    if ticket:
-      return ticket
-    ticket = assemble(key , time.time(), None, None)
-    self.pool.update({ticket:[]})
-    return ticket
-
-  def isPrimaryTicket(self, ticket):
-    assert ticket in self.pool
-    return len(self.pool[ticket]) == 0
-
-  def callbackPairs(self, ticket):
-    for pair in self.pool.get(ticket):
-      yield pair
-
-  def register(self, ticket, callback):
-    t = self.pool.get(ticket) 
-    t.append[callback]
-    self.pool[ticket] = t
+    return self.index.values()
 
   def _make_path(self, fname):
     return os.path.join(self.path, fname)
 
-  def set(self, ticket, mime, data):
-    assert ticket[0] not in self
-    url = ticket[0]
-    rq = ticket[1]
-    ar = time.time()
-    print >> sys.stderr, 'filling storage with %5f s:  %6i byte : %s'%( ar - rq , len(data), url)
-    self.save(url, mime, data)
+  def make_entry(self, key):
+    '''
+      reserve
+    '''
+    assert key not in self.index
+    entry = CacheEntry(key, self.path)
+    self.index[key] = entry
+    return entry
 
-  def save(self, url, mime, data):
-    fname = url2name(url)
-    with file(self._make_path(fname), 'w') as f:
-      self.index[url] = fname
-      f.write(data)
-      print 'saving:', url, ':', fname
-
-  def get(self, key, default=None):
-    p = self.peek_filepath(key, default)
-    print 'Storage:get', key, p
-    if p is None:
-      return None
-    with file(p, 'r') as f:
-      return f.read()
-
-  def peek_filepath(self, key,  default=None):
-    fname = self.index.get(key, default)
-    if fname is None:
-      return None
-    return self._make_path(fname)
+  def get(self, key):
+    return self.index.get(key, None)
 
   def pop(self, key):
-    p = self.peek_filepath(key)
-    if p:
-      os.remove(p)
-      del self.index[key]
+    return self.index.pop(key)
     
   def load_index(self):
     p = self._make_path('index.pickle')
@@ -153,7 +169,8 @@ class Storage(object):
 
   def save_index(self):
     p = self._make_path('index.pickle')
-    print 'saving %i entries'%(len(self.index),)
+    for entry in self.index.values():
+      entry.abort()
     with open(p, 'w') as f:
       pickle.dump(self.index, f)
 
@@ -417,51 +434,37 @@ class Junkie(object):
     with open('config') as f:
       self.auth = yaml.load(f.read())
 
-  def cache_get(self, url):
+  def get(self, url):
+    ce = self._cache(url)
+    if not ce:
+      ce = self._web(url)
+    return ce
+
+  def _cache(self, url):
     '''
       retrieve content from cache.
-      returns DataFile object
+      returns CacheEntry object
     '''
     return self.storage.get(url) 
 
-  def _primary_get(self, ticket):
-    url = ticket[0] #FIXME
+  def _web(self, url):
+    '''
+      retrieve content from web.
+      returns CacheEntry object
+    '''
+    entry = self.storage.make_entry(url)
+
     d = client.getPage(url)
     def onPageArrival(data):
       f = DataFile(data, 'OK') #FIXME Don't guess, use header
-      self.storage.set(ticket, f.contentType, data)
-      for consumer, fail in self.storage.callbackPairs(ticket):
-        reactor.callLater(0, consumer, f.clone())
+      entry.write(f)
       return f
     d.addCallback(onPageArrival)
     def onFail(f):#FIXME
-      for consumer, fail in self.storage.callbackPairs(ticket):
-        reactor.callLater(0, fail, f.clone())
+      entry.abort()
       return 'fail' #FIXME
     d.addErrback(onFail) 
-    return d
-
-  def _secondary_get(self, ticket):
-    d = defer.Deferred()
-    def consumer(f):
-      print 'consumer', f.getvalue()[:40]
-      return f
-    def fail(f):
-      f.close()
-      return 'fail' #FIXME
-    self.storage.register(ticket, (consumer, fail))
-    return d
-    
-  def web_get(self, url):
-    '''
-      retrieve content from web.
-      returns deferred.
-   '''
-    ticket = self.storage.reserve(url)
-    if self.storage.isPrimaryTicket(ticket):
-      return self._primary_get(ticket)
-    else:
-      return self._secondary_get(ticket)
+    return entry
 
   def prefetch(self, uri):
     data_dict = {'start': 0, 'num': 50}
@@ -490,8 +493,7 @@ class Junkie(object):
     for post in find(t):
       p = PostFactory(post)
       for url in p.assets_urls():
-        if url not in self.storage:
-          self.web_get(url)
+        self.get(url)
       self.posts.append(p)
 
 '''
