@@ -4,10 +4,10 @@
   from 
   http://wiki.python.org/moin/Twisted-Examples
 '''
+import sys
 
 import urlparse
 import subprocess
-import sys
 
 from twisted.web import proxy, http
 from twisted.internet import reactor, defer
@@ -127,7 +127,12 @@ if __name__ == '__main__':
   with open('proxy.log', 'w') as f:
     log.startLogging(f)
     import plugins
+    import tumblr
     reactor.listenTCP(8080, PrefetchProxyFactory())#'proxy.log'))
     reactor.run()
-    print 'bye! (proxy.py)'
+    print >> sys.stderr, tumblr.junkie
+    print >> sys.stderr, tumblr.junkie.storage
+    tumblr.junkie.storage.save_entries()
+    tumblr.junkie.storage.save_index()
+    print >> sys.stderr, 'bye! (proxy.py)'
 
