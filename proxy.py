@@ -9,7 +9,7 @@ import subprocess
 from twisted.web import proxy, http
 from twisted.internet import defer
 
-import plugins
+import dnmapper
  
 class ProxyServerProcess(object):
   process = None
@@ -59,12 +59,12 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
     parsed = urlparse.urlparse(self.uri)
     host = parsed[1]
 
-    m = plugins.get_mapper()
+    m = dnmapper.get_mapper()
     matched = m.postfix(host)
 
     if len(matched) == 1:
-      plugin_mod = matched.pop()
-      d = plugin_mod.process(self)
+      handler = matched.pop()
+      d = handler(self)
       if isinstance(d, defer.Deferred):
         '''
           There are 3 possibilities

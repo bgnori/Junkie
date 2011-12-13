@@ -325,6 +325,3 @@ class Junkie(object):
       self.posts.append(p)
 
 
-
-junkie = Junkie()
-
