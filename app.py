@@ -2,20 +2,28 @@
 # -*- coding=utf8 -*-
 import sys
 
+#import codecs
 
 from twisted.python import log
 from twisted.internet import reactor
 from twisted.web import client
 from twisted.internet import defer
 
+import cache
 import proxy
 import dnmapper
 import tumblr
+import render
+import pickle
+
+#sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
+#sys.stderr = codecs.getwriter('utf_8')(sys.stderr)
 
 junkie = tumblr.Junkie()
+junkie.prefetch()
 
 def abacus(request):
-  reactor.callLater(0.1, junkie.prefetch, request.uri) #FIXME
+  reactor.callLater(0.1, junkie.prefetch) #FIXME
   return None
 
 dnmapper.register('abacus.tumblr.com', abacus)
@@ -27,22 +35,18 @@ def media(request):
 
 dnmapper.register('media.tumblr.com', media)
 
-def www(request):
-  url = request.uri
-  print 'plugin: www-tumblr is serving'
-  print url
-  d = client.getPage(url,
-          headers = request.headers,
-      )
-  def onPageArrival(data):
-    f = tumblr.DataFile(data, 'OK') #FIXME DO not guess. use header
-    return f
-  d.addCallback(onPageArrival)
-  def onFail(f):#FIXME
-    return 'fail' #FIXME
-  d.addErrback(onFail) 
+def mushboard(request):
+  d = defer.Deferred()
+  r = render.HTMLRenderer()
+  htmlfrags = []
+  for p in reversed(junkie.posts):
+    htmlfrags.append(r.render(p))
+  html = '<html>' + ''.join(htmlfrags) + '</html>'
+  f = cache.DataFile(html.encode('utf8'), 'OK', )#'text/html;utf8') 
+  reactor.callLater(0, d.callback, f) 
   return d
-#dnmapper.register('www.tumblr.com', www)
+
+dnmapper.register('mushboard', mushboard)
 
 
 
@@ -56,7 +60,5 @@ def main():
 
 with open('junkie.log', 'w') as f:
     log.startLogging(f)
-    import tumblr
-    import plugins
     main()
 

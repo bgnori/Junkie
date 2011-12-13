@@ -312,4 +312,14 @@ pluginもやりすぎ。
 
 現状正しい方向に向かっているといえるか？ => Yes.
 
+dashboardのレンダリング
+- Pythonでrenderingする
+ + Genshiを使う
+- XSLTを使う(lxml.etreeで処理)
+ + http://symphony-cms.com/download/xslt-utilities/view/20746/
+ + https://gist.github.com/107037
+  出力結果はざっくり。
+  saved as tumblr.xslt
+
+
 
