@@ -132,7 +132,10 @@ class IGMatch(object):
         assert False
     return r
 
+_mapper = IGMatch({})
 
+def register(dname, handler):
+  _mapper.add(dname, handler)
 
 if __name__ == '__main__':
   import doctest
