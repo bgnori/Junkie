@@ -257,4 +257,9 @@ class Junkie(object):
         self.get(url)
       self.posts.append(p)
 
+  def make_dashboard(self):
+    '''
+      returns html
+    '''
 
+    

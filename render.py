@@ -1,6 +1,9 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
 
+from copy import deepcopy
+from lxml import etree
+
 class Renderer(object):
   def render(self, post):
     raise
@@ -92,10 +95,31 @@ class GenshiRenderer(Renderer):
   pass
 
 
+class XSLTRenderer(Renderer):
+  def __init__(self, xslt_path):
+    super(XSLTRenderer, self).__init__()
+    self.load_xslt(xslt_path)
+
+  def load_xslt(self, xslt_path):
+    self.transform = None
+    with open(xslt_path) as f:
+      xml = etree.XML(f.read())
+      self.transform = etree.XSLT(xml)
+
+  def render(self, posts):
+    dashboard = etree.Element('tumblr', version="1.0")
+    x = etree.SubElement(dashboard, 'posts')
+    
+    if isinstance(posts, list):
+      ps = posts
+    else:
+      assert isinstance(posts, Post)
+      ps = [posts]
+    for p in ps:
+      x.append(deepcopy(p.elem))
+    return self.transform(dashboard)
+
 if __name__ == '__main__':
-  import os
-  #from genshi.template import TemplateLoader
-  from lxml import etree
 
   import tumblr
 
@@ -104,24 +128,11 @@ if __name__ == '__main__':
     find = etree.XPath('/tumblr/posts/post')
     return [tumblr.PostFactory(post) for post in find(t)]
   
-  #loader = TemplateLoader(['./']) #os.path.dirname(__file__) )
-  #tmpl = loader.load('test.html')
-  
-  with open('dashboard/1323777364.11.xml') as f:
-    src = f.read()
-    xml = etree.XML(src)
-    #posts = make_postdata(f.read())
-    
-  with open('tumblr.xslt') as f:
-    xslt = f.read()
-    root = etree.XML(xslt)
-    transform = etree.XSLT(root)
-  
-  r = transform(xml)
-  print r#.tostring()
-  #print posts
-  #stream = tmpl.generate(title = u"mushboard", posts=posts)
-  #html = stream.render("html")
-  #print html
+  r = XSLTRenderer('tumblr.xslt')
 
+  with open('dashboard/1323777364.11.xml') as f:
+    posts = make_postdata(f.read())
+    dashboard = r.render(posts)
+    print dashboard 
+  
 
