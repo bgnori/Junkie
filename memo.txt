@@ -321,5 +321,8 @@ dashboardのレンダリング
   出力結果はざっくり。
   saved as tumblr.xslt
 
+とりあえず、dashboard.xmlをそれなりにフォーマットして出力するめどが立った。
+tumblr/__init__.py化
+render, tumblr.py as model.pyを移動
 
 

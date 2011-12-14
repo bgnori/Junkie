@@ -121,12 +121,12 @@ class XSLTRenderer(Renderer):
 
 if __name__ == '__main__':
 
-  import tumblr
+  import junkie
 
   def make_postdata(xmldata):
     t = etree.XML(xmldata)
     find = etree.XPath('/tumblr/posts/post')
-    return [tumblr.PostFactory(post) for post in find(t)]
+    return [junkie.PostFactory(post) for post in find(t)]
   
   r = XSLTRenderer('tumblr.xslt')
 

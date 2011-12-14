@@ -2,7 +2,7 @@
 # -*- coding=utf8 -*-
 import sys
 
-#import codecs
+import pickle
 
 from twisted.python import log
 from twisted.internet import reactor
@@ -12,14 +12,11 @@ from twisted.internet import defer
 import cache
 import proxy
 import dnmapper
-import tumblr
-import render
-import pickle
+from tumblr import render
+from tumblr.junkie import Junkie
 
-#sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
-#sys.stderr = codecs.getwriter('utf_8')(sys.stderr)
 
-junkie = tumblr.Junkie()
+junkie = Junkie()
 junkie.prefetch()
 
 def abacus(request):
