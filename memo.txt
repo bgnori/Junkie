@@ -247,3 +247,90 @@ Applicationを作る方向に戻る？
  どこでよい判断をしたのか。
 
 
+plugins/media-tumblr.py
+def process(request):
+  print 'plugin: media-tumblr is serving'
+  cached = server.get(request.uri)
+  if not cached:
+    cm = CacheMissHelper(request)
+
+ここでcachedのかわりにdeferredを返すとどうなのか？
+もしくはcachedかdeferredにする。
+
+deferredがprocessをまたいでしまう(orz)
+cache と proxyを統合する？
+
+deferredをとることができると、すべてcacheにあった扱いにできる。
+fetch中にrequestがきた場合も統合できそう。
+これならQueueとかpoolがいらない。
+
+proxyとcacheが分離しているメリットは？
+rep? blockingの回避
+
+file IO
+
+sigle processというbranchを切った。
+cacheのprocessを廃止する方向で。
+storageを作って保持させるタイミングが分からない。
+Proxyを実体化させるときか？
+あとhandler側どのように触ることができるのか？
+
+
+timingはallContentReceivedの直後にrequestに対して
+Cacheのインスタンスを渡すなりするのがよさげだが、
+requestをとれない. channelのqueueから削除されてしまう。
+allHeadersReceivedならqueueのケツにいる。
+
+Channelインスタンス(PrefetchProxyClientの祖先)
+
+
+とりあえず動くようになったが、なんか画像ファイルが壊れる。とくにpng
+https://github.com/bgnori/Junkie/commit/5cd13327ae66d4d7e8b167f9bdc64036620de8a0
+content-encodingがらみでなにかやらかしているらしい。
+==> なんか変なif文があった orz
+
+
+getPageでは
+http status code 302とかをhandleできない。
+
+
+ticketとDataFileをなんとかする。
+k
+
+振り返ってみてどうなのか。
+ どこでまずい判断をしたのか。
+ どこでよい判断をしたのか。
+前回は11/23
+11/29-12/9の間、止まっていた。
+-> deferredがらみのtypoが発見できなかった。
+
+REPに問題がある。エラーから原因が分からなかった。
+if文で隠蔽が起こっていた。
+プログラムの実行モデル変更は大きい
+初期の方針が微妙だったが、どうにもならなかった面もある。
+pluginもやりすぎ。
+
+現状正しい方向に向かっているといえるか？ => Yes.
+
+dashboardのレンダリング
+- Pythonでrenderingする
+ + Genshiを使う
+- XSLTを使う(lxml.etreeで処理)
+ + http://symphony-cms.com/download/xslt-utilities/view/20746/
+ + https://gist.github.com/107037
+  出力結果はざっくり。
+  saved as tumblr.xslt
+
+とりあえず、dashboard.xmlをそれなりにフォーマットして出力するめどが立った。
+tumblr/__init__.py化
+render, tumblr.py as model.pyを移動
+
+cacheのentryのうちmemoryにもつものに上限数を用意する。 => RLUをheapつかって実装
+postのdbを作る。
+reblog-graphは別に持つ(被relobgのpostの本体をすべてもてるわけではないから。
+
+
+
+
+
+

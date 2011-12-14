@@ -2,107 +2,223 @@
 # -*- coding=utf8 -*-
 
 import sys
+import StringIO
+import os.path
+import urlparse
+import pickle
 import time
-import subprocess
-from twisted.web import client, xmlrpc, server
-from twisted.internet import reactor
-from twisted.python import log
 
-from xmlrpclib import ServerProxy
+import magic
+from bintrees import FastAVLTree
 
-import model
+from twisted.internet import defer, reactor
 
-def Connection():
-  return ServerProxy("http://localhost:9000", allow_none=True)
+def url2name(url):
+  parsed = urlparse.urlparse(url)
+  return os.path.basename(parsed[2])#'path'
 
-class CacheServerProcess(object):
-  process = None
-  server = None
-  def __enter__(self):
-    self.process = subprocess.Popen(['python', 'cache.py'])
-    self.server = Connection()
-    return self.server
 
-  def __exit__(self, exc_type, exc_value, traceback):
-    if self.process.poll() is None:
-      print 'trying to terminate cache process'
-      try:
-        self.server.save_index()
-      except:
-        print 'failed to save index!'
-      self.process.terminate()
-      self.process.wait()
-      print 'cache process looks terminated.'
-    return False
-
-  
-
-def printError(failure):
-  print >> sys.stderr, "Error", failure.getErrorMessage()
-
-class CacheServer(xmlrpc.XMLRPC):
-  def __init__(self, storage, *args, **kw):
-    xmlrpc.XMLRPC.__init__(self, *args, **kw)
-    self.storage = storage
-
-  def xmlrpc_get(self, url):
-    '''
-      return data pointed by url, None on no data
-    '''
-    d = self.storage.get(url, None)
-    if d:
-      return xmlrpc.Binary(d)
+class DataFile(StringIO.StringIO):
+  def __init__(self, data, message, mime=None, dontguess=None):
+    StringIO.StringIO.__init__(self, data)
+    self.message = message
+    if mime:
+      self.contentType = mime
+    elif dontguess:
+      self.contentType = 'application/octet-stream' #default
     else:
-      return None 
-
-  def xmlrpc_save(self, url, mime, data):
-    print 'saving %s as %s'%(url, mime)
-    self.storage.save(url, mime, data.data)
-
-  def xmlrpc_fetch(self, url):
-    '''
-      if url is not in cache, 
-        request url and store the data from url in cache
-    '''
-    if url not in self.storage:
-      ticket = self.storage.reserve(url)
-
-      d = client.getPage(url)
-      def storePage(data):
-        mime = 'application/octet-stream' #Ugh! fix me
-        self.storage.set(ticket, mime, data)
-      d.addCallback(storePage)
-      d.addErrback(printError)
+      self.contentType = magic.from_buffer(data, mime=True) 
   
-    return url #Echo.
+  def clone(self):
+    return DataFile(self.getvalue(), self.message, self.contentType)
 
-  def xmlrpc_pop(self, url):
-    '''
-      remove data pointed by the url from cache 
-    '''
-    return self.storage.pop(url)
 
-  def xmlrpc_time(self):
-    return time.time()
+class CacheEntry(object):
+  def __init__(self, key, path, last_touch, notify):
+    self.path = path
+    self.key = key
+    self.readRequests = []
+    self.datafile = None
+    self.fname = None
+    self.message = None
+    self.last_touch = last_touch
+    self.notify = notify
+
+  def _make_path(self):
+    return os.path.join(self.path, self.fname)
+
+  def _read(self):
+    return self.datafile.clone()
+
+  def touch(self):
+    self.last_touch = time.time()
+
+  def read(self):
+    d = defer.Deferred()
+    self.readRequests.append(d)
+    if self.datafile:
+      print >> sys.stderr, 'immediate read from memory for %s'%(self.key,)
+      self.onReadyToRead()
+      h = self.notify
+      h(self)
+    elif self.fname:
+      print >> sys.stderr, 'immediate read from disk for %s'%(self.key,)
+      self.move_from_file()
+    else:
+      print >> sys.stderr, 'waiting web for %s'%(self.key,)
+    return d
+    
+  def abort(self):
+    for d in self.readRequests:
+      reactor.callLater(0, d.errback, None)
+    self.readRequests = []
+
+  def onReadyToRead(self):
+    assert self.datafile
+    for d in self.readRequests:
+      reactor.callLater(0, d.callback, self._read()) 
+    self.readRequests = []
+
+  def write(self, datafile):
+    assert not self.datafile
+    self.datafile = datafile.clone()
+    self.onReadyToRead()
+    h = self.notify
+    h(self)
+
+  def move_to_disk(self):
+    assert self.datafile
+    if not self.fname:
+      self.fname = url2name(self.key)
+    p = self._make_path()
+    print >>sys.stderr, 'trying %s, %s'%(self.fname, self.key,)
+    with open(p, 'w') as f:
+      f.write(self.datafile.read())
+      self.message = self.datafile.message
+      self.contentType = self.datafile.contentType
+      self.datafile = None
+      print >>sys.stderr, 'wrote %s, %s'%(self.fname, self.key,)
+    
+  def move_from_file(self):
+    p = self._make_path()
+    with open(p, 'r') as f:
+      self.datafile = DataFile(f.read(), self.message, self.contentType)
+    if self.datafile:
+      self.onReadyToRead()
+      h = self.notify
+      h(self)
+   
+
+class Storage(object):
+  '''
+    Storage to hold cached contents
+  '''
+  on_memory_entry_limit = 128
+  # active requests are not counted.
+
+  def __init__(self, path):
+    self.path = path
+    self.on_memory= FastAVLTree()
+    self.load_index()
+
+  def __contains__(self, key):
+    return key in self.index 
+
+  def __len__(self):
+    return len(self.index)
   
-  def xmlrpc_count(self):
-    return len(self.storage)
+  def __iter__(self):
+    return self.index.values()
 
-  def xmlrpc_save_index(self):
-    self.storage.save_index()
-    return None
+  def _make_path(self, fname):
+    return os.path.join(self.path, fname)
 
-  def xmlrpc_terminate(self):
-    reactor.callLater(0.1, reactor.stop)
-    return None
+  def make_entry(self, key):
+    '''
+      reserve
+    '''
+    assert key not in self.index
+    entry = CacheEntry(key, self.path, 0.0, self.on_notify)
+    #FIXME because cache entry is write once. read many.
+    self.index[key] = entry
+    return entry
 
-if __name__ == '__main__':
-  with open('cache.log', 'w') as f:
-    log.startLogging(f)
-    storage = model.Storage('depot')
-    c = CacheServer(storage, allowNone=True)
-    reactor.listenTCP(9000, server.Site(c))
-    reactor.run()
+  def on_notify(self, entry):
+    print 'cache entries: ', len(self.on_memory)
+    if entry.last_touch in self.on_memory:
+      self.touch(entry)
+    else:
+      self.push_to_memory(entry)
 
-    print 'bye! (cache.py)'
+  def push_to_memory(self, entry):
+    if len(self.on_memory) >=  self.on_memory_entry_limit:
+      last_touch, purged = self.on_memory.pop_min()
+      print 'purged cache life=%f s for %s'%(time.time() - last_touch, purged.key)
+      purged.move_to_disk()
+    self.on_memory.insert(entry.last_touch, entry)
+
+  def touch(self, entry):
+    #revoke
+    self.on_memory.discard(entry.last_touch)
+
+    # activate it as a new entry
+    entry.touch()
+    self.on_memory.insert(entry.last_touch, entry)
+
+  def get(self, key):
+    e = self.index.get(key, None)
+    if e:
+      self.on_notify(e)
+    return e
+
+  def pop(self, key):
+    return self.index.pop(key)
+    
+  def load_index(self):
+    p = self._make_path('index.pickle')
+    
+    no_index = False
+    try:
+      f = open(p)
+    except:
+      f = None
+      pass
+    if f:
+      try:
+        self.index = pickle.load(f)
+      except:
+        no_index = True        
+      finally:
+        f.close()
+    else:
+      no_index = True
+
+    if no_index: 
+      self.index = {}
+      self.save_index()
+
+  def save_entries(self):
+    for entry in self.index.itervalues():
+      if entry.datafile:
+        entry.move_to_disk()
+
+  def save_index(self):
+    p = self._make_path('index.pickle')
+    for entry in self.index.itervalues():
+      entry.abort()
+    with open(p, 'w') as f:
+      pickle.dump(self.index, f)
+
+  def fix(self):
+    to_delete = []
+    for k, v in self.index.items():
+      p = self._make_path(v)
+      try:
+        f = open(p)
+        f.close()
+      except:
+        to_delete.append[k]
+    for k in to_delete:
+      del self.index[k]
+    self.save_index()
 
