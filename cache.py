@@ -34,7 +34,7 @@ class DataFile(StringIO.StringIO):
 
 
 class CacheEntry(object):
-  def __init__(self, key, path, last_touch, purge_ready):
+  def __init__(self, key, path, last_touch, notify):
     self.path = path
     self.key = key
     self.readRequests = []
@@ -42,7 +42,7 @@ class CacheEntry(object):
     self.fname = None
     self.message = None
     self.last_touch = last_touch
-    self.purge_ready = purge_ready
+    self.notify = notify
 
   def _make_path(self):
     return os.path.join(self.path, self.fname)
@@ -59,6 +59,8 @@ class CacheEntry(object):
     if self.datafile:
       print >> sys.stderr, 'immediate read from memory for %s'%(self.key,)
       self.onReadyToRead()
+      h = self.notify
+      h(self)
     elif self.fname:
       print >> sys.stderr, 'immediate read from disk for %s'%(self.key,)
       self.move_from_file()
@@ -76,14 +78,13 @@ class CacheEntry(object):
     for d in self.readRequests:
       reactor.callLater(0, d.callback, self._read()) 
     self.readRequests = []
-    self.touch()
-    h = self.purge_ready
-    h(self)
 
   def write(self, datafile):
     assert not self.datafile
     self.datafile = datafile.clone()
     self.onReadyToRead()
+    h = self.notify
+    h(self)
 
   def move_to_disk(self):
     assert self.datafile
@@ -104,13 +105,15 @@ class CacheEntry(object):
       self.datafile = DataFile(f.read(), self.message, self.contentType)
     if self.datafile:
       self.onReadyToRead()
+      h = self.notify
+      h(self)
    
 
 class Storage(object):
   '''
     Storage to hold cached contents
   '''
-  on_memory_entry_limit = 256 
+  on_memory_entry_limit = 128
   # active requests are not counted.
 
   def __init__(self, path):
@@ -135,13 +138,20 @@ class Storage(object):
       reserve
     '''
     assert key not in self.index
-    entry = CacheEntry(key, self.path, 0.0, self.push_to_memory)
+    entry = CacheEntry(key, self.path, 0.0, self.on_notify)
     #FIXME because cache entry is write once. read many.
     self.index[key] = entry
     return entry
 
+  def on_notify(self, entry):
+    print 'cache entries: ', len(self.on_memory)
+    if entry.last_touch in self.on_memory:
+      self.touch(entry)
+    else:
+      self.push_to_memory(entry)
+
   def push_to_memory(self, entry):
-    if len(self.on_memory) >  self.on_memory_entry_limit:
+    if len(self.on_memory) >=  self.on_memory_entry_limit:
       last_touch, purged = self.on_memory.pop_min()
       print 'purged cache life=%f s for %s'%(time.time() - last_touch, purged.key)
       purged.move_to_disk()
@@ -158,7 +168,7 @@ class Storage(object):
   def get(self, key):
     e = self.index.get(key, None)
     if e:
-      self.touch(e)
+      self.on_notify(e)
     return e
 
   def pop(self, key):
