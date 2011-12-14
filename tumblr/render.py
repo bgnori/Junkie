@@ -118,21 +118,3 @@ class XSLTRenderer(Renderer):
     for p in ps:
       x.append(deepcopy(p.elem))
     return self.transform(dashboard)
-
-if __name__ == '__main__':
-
-  import junkie
-
-  def make_postdata(xmldata):
-    t = etree.XML(xmldata)
-    find = etree.XPath('/tumblr/posts/post')
-    return [junkie.PostFactory(post) for post in find(t)]
-  
-  r = XSLTRenderer('tumblr.xslt')
-
-  with open('dashboard/1323777364.11.xml') as f:
-    posts = make_postdata(f.read())
-    dashboard = r.render(posts)
-    print dashboard 
-  
-

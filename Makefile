@@ -1,14 +1,11 @@
 
-.PHONY: env build clean
+.PHONY: env build clean test
+
+test:
+	nosetests --with-coverage --with-doctest --with-isolation test
 
 env:
-	python bootstrap.py --distribute
-
-build: buildout.cfg
-	bin/buildout
-
-buildout.cfg: freeze.txt buildout.in
-	python makeconfig.py
+	pip install -r freeze.txt
 
 freeze.txt:
 	pip freeze > freeze.txt

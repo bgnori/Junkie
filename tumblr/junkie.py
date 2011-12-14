@@ -12,7 +12,9 @@ from twisted.web import client
 from twisted.internet import defer, reactor
 
 import cache
+
 import model
+import render
 
 def printError(failure):
   print >> sys.stderr, "Error", failure.getErrorMessage()
@@ -25,6 +27,7 @@ class Junkie(object):
   def __init__(self):
     self.posts = []
     self.storage = cache.Storage('depot')
+    self.render = render.XSLTRenderer('tumblr/basic.xslt')
     with open('config') as f:
       self.auth = yaml.load(f.read())
 
