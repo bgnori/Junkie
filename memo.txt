@@ -325,4 +325,12 @@ dashboardのレンダリング
 tumblr/__init__.py化
 render, tumblr.py as model.pyを移動
 
+cacheのentryのうちmemoryにもつものに上限数を用意する。 => RLUをheapつかって実装
+postのdbを作る。
+reblog-graphは別に持つ(被relobgのpostの本体をすべてもてるわけではないから。
+
+
+
+
+
 

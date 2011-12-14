@@ -5,10 +5,11 @@ import sys
 import StringIO
 import os.path
 import urlparse
-
 import pickle
+import time
 
 import magic
+from bintrees import FastAVLTree
 
 from twisted.internet import defer, reactor
 
@@ -33,19 +34,24 @@ class DataFile(StringIO.StringIO):
 
 
 class CacheEntry(object):
-  def __init__(self, key, path):
+  def __init__(self, key, path, last_touch, purge_ready):
     self.path = path
     self.key = key
     self.readRequests = []
     self.datafile = None
     self.fname = None
     self.message = None
+    self.last_touch = last_touch
+    self.purge_ready = purge_ready
 
   def _make_path(self):
     return os.path.join(self.path, self.fname)
 
   def _read(self):
     return self.datafile.clone()
+
+  def touch(self):
+    self.last_touch = time.time()
 
   def read(self):
     d = defer.Deferred()
@@ -55,7 +61,7 @@ class CacheEntry(object):
       self.onReadyToRead()
     elif self.fname:
       print >> sys.stderr, 'immediate read from disk for %s'%(self.key,)
-      self.readFromFile()
+      self.move_from_file()
     else:
       print >> sys.stderr, 'waiting web for %s'%(self.key,)
     return d
@@ -70,13 +76,16 @@ class CacheEntry(object):
     for d in self.readRequests:
       reactor.callLater(0, d.callback, self._read()) 
     self.readRequests = []
+    self.touch()
+    h = self.purge_ready
+    h(self)
 
   def write(self, datafile):
     assert not self.datafile
     self.datafile = datafile.clone()
     self.onReadyToRead()
 
-  def writeToFile(self):
+  def move_to_disk(self):
     assert self.datafile
     if not self.fname:
       self.fname = url2name(self.key)
@@ -89,7 +98,7 @@ class CacheEntry(object):
       self.datafile = None
       print >>sys.stderr, 'wrote %s, %s'%(self.fname, self.key,)
     
-  def readFromFile(self):
+  def move_from_file(self):
     p = self._make_path()
     with open(p, 'r') as f:
       self.datafile = DataFile(f.read(), self.message, self.contentType)
@@ -101,8 +110,12 @@ class Storage(object):
   '''
     Storage to hold cached contents
   '''
+  on_memory_entry_limit = 256 
+  # active requests are not counted.
+
   def __init__(self, path):
     self.path = path
+    self.on_memory= FastAVLTree()
     self.load_index()
 
   def __contains__(self, key):
@@ -122,12 +135,31 @@ class Storage(object):
       reserve
     '''
     assert key not in self.index
-    entry = CacheEntry(key, self.path)
+    entry = CacheEntry(key, self.path, 0.0, self.push_to_memory)
+    #FIXME because cache entry is write once. read many.
     self.index[key] = entry
     return entry
 
+  def push_to_memory(self, entry):
+    if len(self.on_memory) >  self.on_memory_entry_limit:
+      last_touch, purged = self.on_memory.pop_min()
+      print 'purged cache life=%f s for %s'%(time.time() - last_touch, purged.key)
+      purged.move_to_disk()
+    self.on_memory.insert(entry.last_touch, entry)
+
+  def touch(self, entry):
+    #revoke
+    self.on_memory.discard(entry.last_touch)
+
+    # activate it as a new entry
+    entry.touch()
+    self.on_memory.insert(entry.last_touch, entry)
+
   def get(self, key):
-    return self.index.get(key, None)
+    e = self.index.get(key, None)
+    if e:
+      self.touch(e)
+    return e
 
   def pop(self, key):
     return self.index.pop(key)
@@ -158,7 +190,7 @@ class Storage(object):
   def save_entries(self):
     for entry in self.index.itervalues():
       if entry.datafile:
-        entry.writeToFile()
+        entry.move_to_disk()
 
   def save_index(self):
     p = self._make_path('index.pickle')
