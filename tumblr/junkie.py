@@ -94,7 +94,7 @@ class Junkie(object):
       p = tumblr.model.PostFactory(post)
       for url in p.assets_urls():
         self.get(url)
-      self.posts[p.id] = p
+      self.posts[p.elem.attrib['id']] = p
 
   def make_dashboard(self):
     '''
