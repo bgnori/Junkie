@@ -329,6 +329,12 @@ cacheのentryのうちmemoryにもつものに上限数を用意する。 => RLU
 postのdbを作る。
 reblog-graphは別に持つ(被relobgのpostの本体をすべてもてるわけではないから。
 
+Quality Goal
+ - 循環的複雑度 under 10. 
+ - Coverage over 90%
+ - pylintに文句を言われないこと。
+
+
 
 
 

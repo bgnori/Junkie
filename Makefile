@@ -1,8 +1,34 @@
 
-.PHONY: env build clean test
+.PHONY: env build clean test lint
 
-test:
-	nosetests --with-coverage --with-doctest --with-isolation test
+
+PY = \
+	cache.py\
+	proxy.py\
+	dnmapper.py\
+	tumblr/__init__.py\
+	tumblr/junkie.py\
+	tumblr/model.py\
+	tumblr/render.py\
+	test/*.py
+
+TESTPY = test/*.py
+
+# todo:
+#   Add script to measure McCabe Chromatic Complexity
+#   note: known http://www.journyx.com/curt/complexity.html is GONE!
+#
+
+test:  nose lint
+	echo 'done'
+
+nose:
+	nosetests --with-coverage --with-doctest --with-isolation $(TESTPY)
+
+lint: 
+	pylint --include-ids=y --files-output=y --comment=y -f parseable -d W0311 $(PY)
+#no warning for 2-space indentation
+
 
 env:
 	pip install -r freeze.txt
@@ -12,3 +38,6 @@ freeze.txt:
 
 clean:
 	rm -f depot/*
+
+
+
