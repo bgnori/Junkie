@@ -5,29 +5,30 @@ import time
 
 import urllib
 
-from lxml import etree
 import yaml
+from lxml import etree
+from lxml.html import builder as E
 
 from twisted.web import client
 from twisted.internet import defer, reactor
 
 import cache
 
-import model
-import render
+
+import tumblr.model
+import tumblr.render
 
 def printError(failure):
   print >> sys.stderr, "Error", failure.getErrorMessage()
-
 
 
 class Junkie(object):
   agent = 'Junkie https://github.com/bgnori/Junkie'
 
   def __init__(self):
-    self.posts = []
+    self.posts = {}
     self.storage = cache.Storage('depot')
-    self.render = render.XSLTRenderer('tumblr/basic.xslt')
+    self.renderer = tumblr.render.XSLTRenderer('tumblr/basic.xslt')
     with open('config') as f:
       self.auth = yaml.load(f.read())
 
@@ -90,14 +91,25 @@ class Junkie(object):
     t = etree.XML(xmldata)
     find = etree.XPath('/tumblr/posts/post')
     for post in find(t):
-      p = model.PostFactory(post)
+      p = tumblr.model.PostFactory(post)
       for url in p.assets_urls():
         self.get(url)
-      self.posts.append(p)
+      self.posts[p.id] = p
 
   def make_dashboard(self):
     '''
       returns html
     '''
+    post_div = self.renderer.render(self.posts)
+    html = E.HTML(
+      E.HEAD(
+        E.META(charset="UTF-8"),
+        E.META({"http-equiv":"Content-Type", "content":"text/html;charset=utf-8"}),
+        E.TITLE("Mushboard"),
+      ),
+      E.BODY(
+        post_div,
+      )
+    )
+    return etree.tostring(html)
 
-    

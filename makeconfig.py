@@ -12,7 +12,6 @@ template.close()
 freeze = open('freeze.txt')
 
 cfg.write('eggs =\n')
-
 for line in freeze:
   cfg.write(' '*4)
   cfg.write(line)

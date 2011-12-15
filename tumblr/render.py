@@ -107,14 +107,23 @@ class XSLTRenderer(Renderer):
       self.transform = etree.XSLT(xml)
 
   def render(self, posts):
-    dashboard = etree.Element('tumblr', version="1.0")
+    dashboard = etree.Element('tumblr')
+    #, version="1.0")#, encoding="UTF-8")
+    #FIXME basic.xslt ignores these.
+
     x = etree.SubElement(dashboard, 'posts')
     
     if isinstance(posts, list):
       ps = posts
-    else:
-      assert isinstance(posts, Post)
+    elif isinstance(posts, Post):
       ps = [posts]
+    else:
+      assert False
+    
     for p in ps:
       x.append(deepcopy(p.elem))
-    return self.transform(dashboard)
+    proto = self.transform(dashboard)
+    return proto.getroot()
+    
+
+

@@ -23,15 +23,18 @@ test:  nose lint
 	echo 'done'
 
 nose:
-	nosetests --with-coverage --with-doctest --with-isolation $(TESTPY)
+	nosetests --with-coverage --with-doctest --with-isolation -w test
 
 lint: 
 	pylint --include-ids=y --files-output=y --comment=y -f parseable -d W0311 $(PY)
 #no warning for 2-space indentation
 
 
-env:
+env: buildout.cfg
 	pip install -r freeze.txt
+
+buildout.cfg:
+	python makeconfig.py
 
 freeze.txt:
 	pip freeze > freeze.txt

@@ -4,6 +4,4 @@ parts = env
 [env]
 recipe = zc.recipe.egg
 interpreter = python
-eggs =
-    nose==1.1.2
-
+# eggs = will be added by makeconfig.py

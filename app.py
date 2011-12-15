@@ -34,12 +34,8 @@ dnmapper.register('media.tumblr.com', media)
 
 def mushboard(request):
   d = defer.Deferred()
-  r = render.HTMLRenderer()
-  htmlfrags = []
-  for p in reversed(junkie.posts):
-    htmlfrags.append(r.render(p))
-  html = '<html>' + ''.join(htmlfrags) + '</html>'
-  f = cache.DataFile(html.encode('utf8'), 'OK', )#'text/html;utf8') 
+  html = junkie.make_dashboard()
+  f = cache.DataFile(html, 'OK', 'text/html;utf8') 
   reactor.callLater(0, d.callback, f) 
   return d
 

@@ -337,7 +337,11 @@ Quality Goal
 
 
 2011-12-15 10:30:52+0900 [HTTPPageGetter,client] purged cache life=1323912652.320562 s for http://27.media.tumblr.com/tumblr_lw818dmUXc1qztgb6o1_75sq.png
+==> fixed
 
-
+How to fixs this?
+	  File "/home/nori/Desktop/work/tumblr/mypython/lib/python2.6/site-packages/twisted/web/http.py", line 866, in finish
+	    "Request.finish called on a request after its connection was lost; "
+	exceptions.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
 
 
