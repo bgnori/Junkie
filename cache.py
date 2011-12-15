@@ -153,8 +153,12 @@ class Storage(object):
   def push_to_memory(self, entry):
     if len(self.on_memory) >=  self.on_memory_entry_limit:
       last_touch, purged = self.on_memory.pop_min()
-      print 'purged cache life=%f s for %s'%(time.time() - last_touch, purged.key)
+      print 'purged cache life=%f s for %s' % (time.time() - last_touch, purged.key)
+      print purged.datafile
       purged.move_to_disk()
+    entry.touch()
+    print "putting entry %s" % (entry.key)
+    assert entry.datafile
     self.on_memory.insert(entry.last_touch, entry)
 
   def touch(self, entry):
@@ -167,8 +171,6 @@ class Storage(object):
 
   def get(self, key):
     e = self.index.get(key, None)
-    if e:
-      self.on_notify(e)
     return e
 
   def pop(self, key):
