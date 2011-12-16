@@ -94,13 +94,24 @@ class Junkie(object):
       p = tumblr.model.PostFactory(post)
       for url in p.assets_urls():
         self.get(url)
-      self.posts[p.elem.attrib['id']] = p
+      self.posts[p.id] = p
 
   def make_dashboard(self):
     '''
       returns html
     '''
-    post_div = self.renderer.render(self.posts)
+
+    uniques = {}
+    #unique by root post
+    for p in self.posts.itervalues():
+      q = uniques.get(p.reblogged_root_url, None)
+      if q is None or q.unix_timestamp > p.unix_timestamp:
+        uniques[p.reblogged_root_url] = p
+
+    posts = sorted(uniques.itervalues(), key=lambda x:x.unix_timestamp)
+    
+    post_div = self.renderer.render(posts)
+
     html = E.HTML(
       E.HEAD(
         E.META(charset="UTF-8"),

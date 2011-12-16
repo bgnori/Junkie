@@ -4,6 +4,8 @@
 from copy import deepcopy
 from lxml import etree
 
+from tumblr.model  import Post
+
 class Renderer(object):
   def render(self, post):
     raise
@@ -107,19 +109,20 @@ class XSLTRenderer(Renderer):
       self.transform = etree.XSLT(xml)
 
   def render(self, posts):
-    dashboard = etree.Element('tumblr')
-    #, version="1.0")#, encoding="UTF-8")
-    #FIXME basic.xslt ignores these.
-
-    x = etree.SubElement(dashboard, 'posts')
-    
+    print type(posts), posts
     if isinstance(posts, list):
       ps = posts
     elif isinstance(posts, Post):
       ps = [posts]
+    elif posts is None:
+      ps = []
     else:
       assert False
     
+    dashboard = etree.Element('tumblr')
+    #, version="1.0")#, encoding="UTF-8")
+    #FIXME basic.xslt ignores these.
+    x = etree.SubElement(dashboard, 'posts')
     for p in ps:
       x.append(deepcopy(p.elem))
     proto = self.transform(dashboard)
