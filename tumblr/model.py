@@ -5,6 +5,7 @@ import time
 from copy import deepcopy
 
 from lxml import etree
+from bintrees import FastAVLTree
 
 class Post(object):
   '''
@@ -288,4 +289,33 @@ def PostFactory(elem):
   '''
   cls = mapper[elem.attrib['type']]
   return cls(elem)
+
+def serialize(post):
+  return etree.tostring(post.elem)
+
+
+class AkashicRecord(object):
+  '''
+    Database of Tumblr Post
+
+    get by id
+    sorted with unix_timestamp
+    viewed flag.
+    new note check
+  '''
+
+  def __init__(self):
+    self.impl = FastAVLTree()
+
+  def get(self, post_id):
+    return self.impl.get(post_id)
+
+  def put(self, post):
+    assert isinstance(post, Post)
+    return self.impl.insert(post.id, post)
+
+  def get_after(self, start):
+    pass
+
+
 

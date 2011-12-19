@@ -9,7 +9,7 @@ import pickle
 import time
 
 import magic
-from bintrees import FastAVLTree
+from ordereddict import OrderedDict
 
 from twisted.internet import defer, reactor
 
@@ -52,6 +52,7 @@ class CacheEntry(object):
 
   def touch(self):
     self.last_touch = time.time()
+    assert self.last_touch > 1.0
 
   def read(self):
     d = defer.Deferred()
@@ -69,6 +70,7 @@ class CacheEntry(object):
     return d
     
   def abort(self):
+    print 'aborting ', self.key
     for d in self.readRequests:
       reactor.callLater(0, d.errback, None)
     self.readRequests = []
@@ -109,16 +111,17 @@ class CacheEntry(object):
       h(self)
    
 
-class Storage(object):
+class Cache(object):
   '''
-    Storage to hold cached contents
+    Cache to hold cached contents
   '''
-  on_memory_entry_limit = 128
   # active requests are not counted.
 
-  def __init__(self, path):
+  def __init__(self, path, entry_limit):
     self.path = path
-    self.on_memory= FastAVLTree()
+    self.on_memory_entry_limit = entry_limit
+    self.on_memory = OrderedDict() #FastAVLTree()
+    self.index = {}
     self.load_index()
 
   def __contains__(self, key):
@@ -145,29 +148,29 @@ class Storage(object):
 
   def on_notify(self, entry):
     print 'cache entries: ', len(self.on_memory)
-    if entry.last_touch in self.on_memory:
+    if entry.key in self.on_memory:
       self.touch(entry)
     else:
       self.push_to_memory(entry)
 
   def push_to_memory(self, entry):
     if len(self.on_memory) >=  self.on_memory_entry_limit:
-      last_touch, purged = self.on_memory.pop_min()
-      print 'purged cache life=%f s for %s' % (time.time() - last_touch, purged.key)
-      print purged.datafile
+      key, purged = self.on_memory.popitem(False) #popping first item
+      print 'purged cache life=%f s since %f for %s' % (time.time() - purged.last_touch, purged.last_touch, purged.key)
       purged.move_to_disk()
     entry.touch()
     print "putting entry %s" % (entry.key)
     assert entry.datafile
-    self.on_memory.insert(entry.last_touch, entry)
+    assert entry.last_touch > 1.0
+    self.on_memory[entry.key] = entry
 
   def touch(self, entry):
     #revoke
-    self.on_memory.discard(entry.last_touch)
-
+    x = self.on_memory.pop(entry.key)
+    assert x == entry
     # activate it as a new entry
     entry.touch()
-    self.on_memory.insert(entry.last_touch, entry)
+    self.on_memory[entry.key] = entry
 
   def get(self, key):
     e = self.index.get(key, None)
@@ -205,6 +208,7 @@ class Storage(object):
         entry.move_to_disk()
 
   def save_index(self):
+    print 'Cache.save_index'
     p = self._make_path('index.pickle')
     for entry in self.index.itervalues():
       entry.abort()

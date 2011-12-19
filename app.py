@@ -46,8 +46,7 @@ dnmapper.register('mushboard', mushboard)
 def main():
     reactor.listenTCP(8080, proxy.PrefetchProxyFactory())#'proxy.log'))
     reactor.run()
-    tumblr.junkie.storage.save_entries()
-    tumblr.junkie.storage.save_index()
+    tumblr.junkie.save()
     print >> sys.stderr, 'bye! (proxy.py)'
 
 

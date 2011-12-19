@@ -12,11 +12,10 @@ from lxml.html import builder as E
 from twisted.web import client
 from twisted.internet import defer, reactor
 
-import cache
+from cache import DataFile, Cache
 
 
-import tumblr.model
-import tumblr.render
+from tumblr import render, model
 
 def printError(failure):
   print >> sys.stderr, "Error", failure.getErrorMessage()
@@ -27,10 +26,15 @@ class Junkie(object):
 
   def __init__(self):
     self.posts = {}
-    self.storage = cache.Storage('depot')
-    self.renderer = tumblr.render.XSLTRenderer('tumblr/basic.xslt')
+    self.cache = Cache('depot', 128)
+    self.cache.load_index()
+    self.renderer = render.XSLTRenderer('tumblr/basic.xslt')
     with open('config') as f:
       self.auth = yaml.load(f.read())
+
+  def save(self):
+    self.cache.save_entries()
+    self.cache.save_index()
 
   def get(self, url):
     ce = self._cache(url)
@@ -43,22 +47,23 @@ class Junkie(object):
       retrieve content from cache.
       returns CacheEntry object
     '''
-    return self.storage.get(url) 
+    return self.cache.get(url) 
 
   def _web(self, url):
     '''
       retrieve content from web.
       returns CacheEntry object
     '''
-    entry = self.storage.make_entry(url)
+    entry = self.cache.make_entry(url)
 
     d = client.getPage(url)
     def onPageArrival(data):
-      f = cache.DataFile(data, 'OK') #FIXME Don't guess, use header
+      f = DataFile(data, 'OK') #FIXME Don't guess, use header
       entry.write(f)
       return f
     d.addCallback(onPageArrival)
     def onFail(f):#FIXME
+      print 'onFail', f
       entry.abort()
       return 'fail' #FIXME
     d.addErrback(onFail) 
@@ -91,7 +96,7 @@ class Junkie(object):
     t = etree.XML(xmldata)
     find = etree.XPath('/tumblr/posts/post')
     for post in find(t):
-      p = tumblr.model.PostFactory(post)
+      p = model.PostFactory(post)
       for url in p.assets_urls():
         self.get(url)
       self.posts[p.id] = p

@@ -75,6 +75,7 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
           when it gets ready, we read it and write the response to fulfill the original request.
         '''
         def onReadyToRead(f):
+          print 'process:onReadyToRead'
           self.setResponseCode(200, f.message)
           self.responseHeaders.addRawHeader("Content-Type", f.contentType)
           self.write(f.read())
@@ -82,6 +83,7 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
           self.finish()
         d.addCallback(onReadyToRead)
         def onError(f):
+          print 'process:onError'
           self.setResponseCode(500, 'proxy error') #FIXME f.message)
           self.finish()
         d.addErrback(onError)

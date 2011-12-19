@@ -345,3 +345,56 @@ How to fixs this?
 	exceptions.RuntimeError: Request.finish called on a request after its connection was lost; use Request.notifyFinish to keep track of this.
 
 
+cacheの実装をAVLからordereddictに変更する？
+http://pypi.python.org/pypi/ordereddict/
+nthにtouchすることがあるのでダメかも。
+-> keyで削除するから変える。
+順序再度作り直すコトができるわけではないようだ。
+
+Postを保持するAkashicRecordはなにで実装するか？
+ - ordereddict  APIとしてSequencialなアクセスを許していない。 => SequenceDictとでもしてAPIを追加する？
+ - B木 実装が・・
+ - bsddb python3でなくなるので使いたくない
+ - sqlite  + twisted.enterprise.adbapi 
+ - CouchDB 大げさ
+
+http://togetter.com/li/228938
+
+reblog_keyが謎なので、ちょっと調べる。
+http://www.tumblr.com/reblog/14426644596/xh1tGS37?redirect_to=%2Fdashboard
+
+-key="uZt9U11m"
+-key="uZt9U11m"
+
+
+<post id="14163091399" url="http://nemoi.tumblr.com/post/14163091399" url-with-slug="http://nemoi.tumblr.com/post/14163091399/nike-zoom-kd-iv-nerf-edition-release-info" type="photo" date-gmt="2011-12-13 11:53:01 GMT" date="Tue, 13 Dec 2011 20:53:01" unix-timestamp="1323777181" format="html" reblog-key="kxxq0Mfa" slug="nike-zoom-kd-iv-nerf-edition-release-info" tumblelog="nemoi" note-count="0" width="570" height="450">
+<tumblelog title="nemoi memo" name="nemoi" url="http://nemoi.tumblr.com/" timezone="Asia/Tokyo" avatar-url-16="http://27.media.tumblr.com/avatar_fc6c487e6013_16.png" avatar-url-24="http://29.media.tumblr.com/avatar_fc6c487e6013_24.png" avatar-url-30="http://26.media.tumblr.com/avatar_fc6c487e6013_30.png" avatar-url-40="http://30.media.tumblr.com/avatar_fc6c487e6013_40.png" avatar-url-48="http://30.media.tumblr.com/avatar_fc6c487e6013_48.png" avatar-url-64="http://28.media.tumblr.com/avatar_fc6c487e6013_64.png" avatar-url-96="http://25.media.tumblr.com/avatar_fc6c487e6013_96.png" avatar-url-128="http://25.media.tumblr.com/avatar_fc6c487e6013_128.png" avatar-url-512="http://24.media.tumblr.com/avatar_fc6c487e6013_512.png"/>
+
+14163091399
+ 1323777181
+
+kxxq0Mfa
+
+*.tumblr.comのうち、運営が使っている物。
+www, 
+assets, cssとか
+static,  
+data, 
+abacus,  新たなpost到着を知らせるjsonp用
+platform,  +ボタン用
+
+http://otsune.tumblr.com/post/1018849069/twitter-api-statusid-tumblr-postid-s
+Twitter互換APIで取得できるStatusIDは、TumblrのPostIDとは異なる。が、StatusIDを右へ16bitシフトするとPostIDになる。
+
+
+http://d.hatena.ne.jp/gkojax/20111129
+例えば、http://eri-eri-kamei-eri.tumblr.com/post/13395547613とhttp://mcsgsym.tumblr.com/post/13501396948のデータをAPIから取得するとreblog_keyが一緒になっている。そのため、１つのreblog_keyに複数のポストが紐づいているような感じで。reblogsとpostsは１対多になる。
+
+
+
+<post id="14163011649" url="http://nemoi.tumblr.com/post/14163011649" url-with-slug="http://nemoi.tumblr.com/post/14163011649/1oyenmanzyu" type="photo" date-gmt="2011-12-13 11:48:22 GMT" date="Tue, 13 Dec 2011 20:48:22" unix-timestamp="1323776902" format="html" reblog-key="uZt9U11m" slug="1oyenmanzyu" tumblelog="nemoi" note-count="24" reblogged-from-url="http://ta3jpn.tumblr.com/post/14162791675/1oyenmanzyu" reblogged-from-name="ta3jpn" reblogged-from-title="ta3jpn.tumblr" reblogged-from-avatar-url-16="http://30.media.tumblr.com/avatar_60558c779fa4_16.png" reblogged-from-avatar-url-24="http://26.media.tumblr.com/avatar_60558c779fa4_24.png" reblogged-from-avatar-url-30="http://29.media.tumblr.com/avatar_60558c779fa4_30.png" reblogged-from-avatar-url-40="http://26.media.tumblr.com/avatar_60558c779fa4_40.png" reblogged-from-avatar-url-48="http://25.media.tumblr.com/avatar_60558c779fa4_48.png" reblogged-from-avatar-url-64="http://25.media.tumblr.com/avatar_60558c779fa4_64.png" reblogged-from-avatar-url-96="http://24.media.tumblr.com/avatar_60558c779fa4_96.png" reblogged-from-avatar-url-128="http://26.media.tumblr.com/avatar_60558c779fa4_128.png" reblogged-from-avatar-url-512="http://27.media.tumblr.com/avatar_60558c779fa4_512.png" reblogged-root-url="http://1oyenmanzyu.tumblr.com/post/14139551463/amazing-street-art-with-urban-knitting-2819-29-jpg" reblogged-root-name="1oyenmanzyu" reblogged-root-title="xxxxJPGxxxx!!!!!" reblogged-root-avatar-url-16="http://24.media.tumblr.com/avatar_0ca81cf0c34f_16.png" reblogged-root-avatar-url-24="http://28.media.tumblr.com/avatar_0ca81cf0c34f_24.png" reblogged-root-avatar-url-30="http://29.media.tumblr.com/avatar_0ca81cf0c34f_30.png" reblogged-root-avatar-url-40="http://25.media.tumblr.com/avatar_0ca81cf0c34f_40.png" reblogged-root-avatar-url-48="http://28.media.tumblr.com/avatar_0ca81cf0c34f_48.png" reblogged-root-avatar-url-64="http://26.media.tumblr.com/avatar_0ca81cf0c34f_64.png" reblogged-root-avatar-url-96="http://30.media.tumblr.com/avatar_0ca81cf0c34f_96.png" reblogged-root-avatar-url-128="http://24.media.tumblr.com/avatar_0ca81cf0c34f_128.png" reblogged-root-avatar-url-512="http://24.media.tumblr.com/avatar_0ca81cf0c34f_512.png" width="920" height="600">
+
+root-
+14139551463
+
+
