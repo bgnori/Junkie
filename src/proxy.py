@@ -74,18 +74,27 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
           any case plugin must return deferred with DataFile instance.
           when it gets ready, we read it and write the response to fulfill the original request.
         '''
+        finished = False
+        nf = self.notifyFinish()
+        def checkFinished(igonre):
+          global finished 
+          finished = True
+        nf.addCallback(checkFinished)
+        
         def onReadyToRead(f):
           print 'process:onReadyToRead'
-          self.setResponseCode(200, f.message)
-          self.responseHeaders.addRawHeader("Content-Type", f.contentType)
-          self.write(f.read())
-          f.close()
-          self.finish()
+          if not finished:
+            self.setResponseCode(200, f.message)
+            self.responseHeaders.addRawHeader("Content-Type", f.contentType)
+            self.write(f.read())
+            f.close()
+            self.finish()
         d.addCallback(onReadyToRead)
         def onError(f):
           print 'process:onError'
-          self.setResponseCode(500, 'proxy error') #FIXME f.message)
-          self.finish()
+          if not finished:
+            self.setResponseCode(500, 'proxy error') #FIXME f.message)
+            self.finish()
         d.addErrback(onError)
       else:
         proxy.ProxyRequest.process(self)
