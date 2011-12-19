@@ -4,7 +4,7 @@
 from copy import deepcopy
 from lxml import etree
 
-from tumblr.model  import Post
+from tumblr.post  import Post
 
 class Renderer(object):
   def render(self, post):

@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
 import sys
+import os
+import os.path
 import time
 
 import urllib
@@ -15,7 +17,8 @@ from twisted.internet import defer, reactor
 from cache import DataFile, Cache
 
 
-from tumblr import render, model
+from tumblr import render
+from tumblr.post import PostFactory
 
 def printError(failure):
   print >> sys.stderr, "Error", failure.getErrorMessage()
@@ -28,7 +31,12 @@ class Junkie(object):
     self.posts = {}
     self.cache = Cache('depot', 128)
     self.cache.load_index()
-    self.renderer = render.XSLTRenderer('tumblr/basic.xslt')
+    self.renderer = render.XSLTRenderer(
+      os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'basic.xslt'
+      )
+    )
     with open('config') as f:
       self.auth = yaml.load(f.read())
 
@@ -96,7 +104,7 @@ class Junkie(object):
     t = etree.XML(xmldata)
     find = etree.XPath('/tumblr/posts/post')
     for post in find(t):
-      p = model.PostFactory(post)
+      p = PostFactory(post)
       for url in p.assets_urls():
         self.get(url)
       self.posts[p.id] = p

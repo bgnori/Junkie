@@ -1,7 +1,7 @@
-app.py
-cache.py
-proxy.py
-dnmapper.py
+src/app.py
+src/cache.py
+src/proxy.py
+src/dnmapper.py
 tumblr/__init__.py
 tumblr/junkie.py
 tumblr/model.py

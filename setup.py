@@ -5,11 +5,12 @@ from setuptools import setup, find_packages
 name = "Junkie"
 version = '0.0.1'
 
+
 setup(
   name=name,
   packages = find_packages('src'),
   package_dir = {'':'src'},
-  install_requires=['distribute'],
+  install_requires=open('freeze.txt').readlines(),
   include_package_data=True,
   package_data = {
     '': ['memo.txt'],
@@ -17,7 +18,7 @@ setup(
   },
   entry_points = {
     'console_scripts' :[
-      'junkie = main',
+      'junkie = app:main',
     ],
   },
   author='Noriyuki Hosaka',

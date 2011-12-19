@@ -30,17 +30,17 @@ lint:
 #no warning for 2-space indentation
 
 
-env: buildout.cfg
+env: 
 	pip install -r freeze.txt
 
-buildout.cfg:
-	python makeconfig.py
+develop:
+	python setup.py develop
 
 freeze.txt:
 	pip freeze > freeze.txt
 
 clean:
-	rm -f depot/*
-
+	python setup.py clean
+	rm -f build/*
 
 
