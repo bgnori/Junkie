@@ -28,7 +28,8 @@ test:  nose lint
 	echo 'done'
 
 nose:
-	nosetests --with-coverage --with-doctest --with-isolation test
+	nosetests test
+#nosetests --with-coverage --with-doctest --with-isolation test
 
 lint: 
 	pylint --include-ids=y --files-output=y --comment=y -f parseable -d W0311 src/*

@@ -27,12 +27,7 @@ class DataFile(StringIO.StringIO):
     elif dontguess:
       self.contentType = 'application/octet-stream' #default
     else:
-      self.contentType = 'application/octet-stream' #default
-      #FIXME! some how failed to import ...
-      #print magic.__name__
-      #print magic.__file__
-      #print dir(magic)
-      #self.contentType = magic.from_buffer(data, mime=True) 
+      self.contentType = magic.from_buffer(data, mime=True) 
   
   def clone(self):
     return DataFile(self.getvalue(), self.message, self.contentType)
