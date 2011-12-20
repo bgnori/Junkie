@@ -1,8 +1,6 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
 import sys
-import os
-import os.path
 import time
 
 import urllib
@@ -31,12 +29,7 @@ class Junkie(object):
     self.posts = {}
     self.cache = Cache('depot', 128)
     self.cache.load_index()
-    self.renderer = render.XSLTRenderer(
-      os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        'basic.xslt'
-      )
-    )
+    self.renderer = render.XSLTRenderer('basic.xslt')
     with open('config') as f:
       self.auth = yaml.load(f.read())
 

@@ -1,5 +1,7 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
+import os
+import os.path
 
 from copy import deepcopy
 from lxml import etree
@@ -98,8 +100,16 @@ class GenshiRenderer(Renderer):
 
 
 class XSLTRenderer(Renderer):
-  def __init__(self, xslt_path):
+  def __init__(self, xslt_path_or_name):
     super(XSLTRenderer, self).__init__()
+    
+    if os.sep in xslt_path_or_name:
+      xslt_path = xslt_path_or_name
+    else:
+      xslt_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        xslt_path_or_name
+      )
     self.load_xslt(xslt_path)
 
   def load_xslt(self, xslt_path):
