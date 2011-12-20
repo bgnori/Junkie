@@ -75,11 +75,13 @@ class PrefetchProxyRequest(proxy.ProxyRequest):
           when it gets ready, we read it and write the response to fulfill the original request.
         '''
         finished = False
+        '''
         nf = self.notifyFinish()
         def checkFinished(igonre):
           global finished 
           finished = True
         nf.addCallback(checkFinished)
+        '''
         
         def onReadyToRead(f):
           print 'process:onReadyToRead'
