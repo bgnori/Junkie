@@ -102,13 +102,17 @@ class CacheEntry(object):
       print >>sys.stderr, 'wrote %s, %s'%(self.fname, self.key,)
     
   def move_from_file(self):
+    assert self.datafile is None
+    assert self.fname
     p = self._make_path()
     with open(p, 'r') as f:
-      self.datafile = DataFile(f.read(), self.message, self.contentType)
+      self.datafile = DataFile(f.read(), self.message) #FIXME contentType
     if self.datafile:
       self.onReadyToRead()
       h = self.notify
       h(self)
+    else:
+      raise
    
 
 class Cache(object):

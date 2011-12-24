@@ -392,9 +392,25 @@ http://d.hatena.ne.jp/gkojax/20111129
 
 
 
-<post id="14163011649" url="http://nemoi.tumblr.com/post/14163011649" url-with-slug="http://nemoi.tumblr.com/post/14163011649/1oyenmanzyu" type="photo" date-gmt="2011-12-13 11:48:22 GMT" date="Tue, 13 Dec 2011 20:48:22" unix-timestamp="1323776902" format="html" reblog-key="uZt9U11m" slug="1oyenmanzyu" tumblelog="nemoi" note-count="24" reblogged-from-url="http://ta3jpn.tumblr.com/post/14162791675/1oyenmanzyu" reblogged-from-name="ta3jpn" reblogged-from-title="ta3jpn.tumblr" reblogged-from-avatar-url-16="http://30.media.tumblr.com/avatar_60558c779fa4_16.png" reblogged-from-avatar-url-24="http://26.media.tumblr.com/avatar_60558c779fa4_24.png" reblogged-from-avatar-url-30="http://29.media.tumblr.com/avatar_60558c779fa4_30.png" reblogged-from-avatar-url-40="http://26.media.tumblr.com/avatar_60558c779fa4_40.png" reblogged-from-avatar-url-48="http://25.media.tumblr.com/avatar_60558c779fa4_48.png" reblogged-from-avatar-url-64="http://25.media.tumblr.com/avatar_60558c779fa4_64.png" reblogged-from-avatar-url-96="http://24.media.tumblr.com/avatar_60558c779fa4_96.png" reblogged-from-avatar-url-128="http://26.media.tumblr.com/avatar_60558c779fa4_128.png" reblogged-from-avatar-url-512="http://27.media.tumblr.com/avatar_60558c779fa4_512.png" reblogged-root-url="http://1oyenmanzyu.tumblr.com/post/14139551463/amazing-street-art-with-urban-knitting-2819-29-jpg" reblogged-root-name="1oyenmanzyu" reblogged-root-title="xxxxJPGxxxx!!!!!" reblogged-root-avatar-url-16="http://24.media.tumblr.com/avatar_0ca81cf0c34f_16.png" reblogged-root-avatar-url-24="http://28.media.tumblr.com/avatar_0ca81cf0c34f_24.png" reblogged-root-avatar-url-30="http://29.media.tumblr.com/avatar_0ca81cf0c34f_30.png" reblogged-root-avatar-url-40="http://25.media.tumblr.com/avatar_0ca81cf0c34f_40.png" reblogged-root-avatar-url-48="http://28.media.tumblr.com/avatar_0ca81cf0c34f_48.png" reblogged-root-avatar-url-64="http://26.media.tumblr.com/avatar_0ca81cf0c34f_64.png" reblogged-root-avatar-url-96="http://30.media.tumblr.com/avatar_0ca81cf0c34f_96.png" reblogged-root-avatar-url-128="http://24.media.tumblr.com/avatar_0ca81cf0c34f_128.png" reblogged-root-avatar-url-512="http://24.media.tumblr.com/avatar_0ca81cf0c34f_512.png" width="920" height="600">
 
-root-
-14139551463
+unittest
+
+http://twistedmatrix.com/documents/current/core/howto/testing.html
+Trial runs the entire test suite (over four thousand tests) in a single
+process, with a single reactor.
+
+If your code uses Deferreds or depends on the reactor running, you can return
+a Deferred from your test method, setUp, or tearDown and Trial will do the
+right thing. That is, it will run the reactor for you until the Deferred has
+triggered and its callbacks have been run. Don't use reactor.run(),
+reactor.stop(), reactor.crash() or reactor.iterate() in your tests.
+
+The golden rule is: If your tests call a function which returns a Deferred,
+your test should return a Deferred.
+
+
+unittestを書く。
+reloaderを実装する。
+man holeを使う。
 
 
