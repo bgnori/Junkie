@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding=utf8 -*-
 
+import exceptions
 import sys
 import StringIO
 import os.path
@@ -11,7 +12,11 @@ import time
 import magic
 from ordereddict import OrderedDict
 
+from twisted.python.failure import Failure
 from twisted.internet import defer, reactor
+
+class Cancel(exceptions.StandardError):
+  pass
 
 def url2name(url):
   parsed = urlparse.urlparse(url)
@@ -72,7 +77,7 @@ class CacheEntry(object):
   def abort(self):
     print 'aborting ', self.key
     for d in self.readRequests:
-      reactor.callLater(0, d.errback, None)
+      reactor.callLater(0, d.errback, Failure(Cancel()))
     self.readRequests = []
 
   def onReadyToRead(self):

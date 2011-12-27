@@ -2,10 +2,11 @@
 # -*- coding=utf8 -*-
 import os
 
+
 from twisted.internet import reactor, defer
 from twisted.trial.unittest import TestCase
 
-from cache import DataFile, CacheEntry, url2name
+from cache import DataFile, CacheEntry, url2name, Cancel
 
 html = '<html><head>hoge</head><body>hello!</body></html>'
 
@@ -110,17 +111,56 @@ class TestCacheEntryDisk(TestCase):
       flag = True
     d.addErrback(xxx)
 
-    def xxx(f):
+    def yyy(f):
+      print  'yyy'
       self.assert_(flag)
-    d.addCallback(xxx)
+    d.addCallback(yyy)
+
+    try:
+      ce.move_from_file()
+    except:
+      pass 
     return d
   test_read_on_disk_err.timeout = 1
 
 
 class TestCacheEntryWeb(TestCase):
+  def setUp(self):
+    os.mkdir('test')
+
+  def tearDown(self):
+    os.rmdir('test')
+
   def test_read_on_miss(self):
     ce = CacheEntry('http://example.com/foo/bar/data', 'test', 0.0, lambda x:x)
+    d = ce.read()
+    def xxx(f):
+      self.assertEquals(ce.datafile.read(), 'deadbeaf')
+    d.addCallback(xxx)
+
+    f = DataFile('deadbeaf', '', 'text/plain')
+    ce.write(f)
+    return d
+  test_read_on_miss.timeout = 1
+
   def test_abort(self):
-    pass
+    flag = True
+    ce = CacheEntry('http://example.com/foo/bar/data', 'test', 0.0, lambda x:x)
+    d = ce.read()
+    def xxx(f):
+      self.assertFail()
+    d.addCallback(xxx)
+
+    def yyy(failure):
+      print 'yyy', failure
+      self.assert_(failure.check(Cancel))
+      self.assert_(flag)
+    d.addErrback(yyy)
+
+    self.assert_(ce.readRequests) 
+    ce.abort()
+    self.assert_(len(ce.readRequests) == 0 )
+
+  test_abort.timeout = 1
 
 
