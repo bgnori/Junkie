@@ -41,11 +41,28 @@ def mushboard(request):
 
 dnmapper.register('mushboard', mushboard)
 
+def show_cache(request):
+  d = defer.Deferred()
+  html = junkie.cache.html_index()
+  f = cache.DataFile(html, 'OK', 'text/html;utf8') 
+  reactor.callLater(0, d.callback, f) 
+  return d
+
+dnmapper.register('show_cache', show_cache)
+
+
+def onStartUp():
+  reactor.addSystemEventTrigger('after', 'shutdown', onShutdown)
+
+def onShutdown():
+  print 'onShutdown'
+  junkie.save()
+
 
 def app():
     reactor.listenTCP(8080, proxy.PrefetchProxyFactory())#'proxy.log'))
+    reactor.callLater(0, onStartUp)
     reactor.run()
-    tumblr.junkie.save()
 
 def main():
     with open('junkie.log', 'w') as f:

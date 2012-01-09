@@ -4,6 +4,7 @@
 import exceptions
 import sys
 import StringIO
+import os
 import os.path
 import urlparse
 import pickle
@@ -55,6 +56,14 @@ class CacheEntry(object):
   def _read(self):
     return self.datafile.clone()
 
+  def status(self):
+    if self.datafile and self.datafile.contentType:
+      return 'on memory'
+    elif self.fname:
+      return 'on disk'
+    else:
+      return 'requesting'
+
   def touch(self):
     self.last_touch = time.time()
     assert self.last_touch > 1.0
@@ -69,6 +78,9 @@ class CacheEntry(object):
       h(self)
     elif self.fname:
       print >> sys.stderr, 'immediate read from disk for %s'%(self.key,)
+      self.move_from_file()
+    elif self.guess_fname_and_found():
+      print >> sys.stderr, 'found orphan on disk for %s'%(self.key,)
       self.move_from_file()
     else:
       print >> sys.stderr, 'waiting web for %s'%(self.key,)
@@ -106,6 +118,17 @@ class CacheEntry(object):
       self.datafile = None
       print >>sys.stderr, 'wrote %s, %s'%(self.fname, self.key,)
     
+  def guess_fname_and_found(self):
+    self.fname = url2name(self.key)
+    guessed = self._make_path()
+    if not os.access(guessed, os.F_OK):
+      self.fname = None #undo
+      return False
+    
+    return True
+    #self.fname 
+
+
   def move_from_file(self):
     assert self.datafile is None
     assert self.fname
@@ -124,6 +147,7 @@ class Cache(object):
   '''
     Cache to hold cached contents
   '''
+  index_filename = "index.pickle"
   # active requests are not counted.
 
   def __init__(self, path, entry_limit):
@@ -189,7 +213,7 @@ class Cache(object):
     return self.index.pop(key)
     
   def load_index(self):
-    p = self._make_path('index.pickle')
+    p = self._make_path(self.index_filename)
     
     no_index = False
     try:
@@ -212,13 +236,14 @@ class Cache(object):
       self.save_index()
 
   def save_entries(self):
+    print 'Cache.save_entries'
     for entry in self.index.itervalues():
       if entry.datafile:
         entry.move_to_disk()
 
   def save_index(self):
     print 'Cache.save_index'
-    p = self._make_path('index.pickle')
+    p = self._make_path(self.index_filename)
     for entry in self.index.itervalues():
       entry.abort()
     with open(p, 'w') as f:
@@ -228,12 +253,41 @@ class Cache(object):
     to_delete = []
     for k, v in self.index.items():
       p = self._make_path(v)
-      try:
-        f = open(p)
-        f.close()
-      except:
+      if not os.access(p, os.F_OK | os.R_OK | os.W_OK):
         to_delete.append[k]
     for k in to_delete:
       del self.index[k]
     self.save_index()
+
+  def scan(self):
+    ''' wrong idea. cant generate url from file name...'''
+    #return os.path.join(self.path, fname)
+    for fname in os.listdir(self.path):
+      if fname == self.index_filename:
+        continue
+
+    
+
+  def html_index(self):
+    count = len(self.index)
+    x = []
+    for key, ce in self.on_memory.iteritems():
+      x.append('<li>[%s ]: %s</li>\n'%(key, ce.status()))
+    frag_mem = '<ol>%s</ol>'%(''.join(x))
+
+    y = []
+    for key, ce in self.index.iteritems():
+      y.append('<li>[%s ]: %s</li>\n'%(key, ce.status()))
+    frag_index = '<ol>%s</ol>'%(''.join(y))
+    html = '''<html><body>
+      <p>count:%s</p>
+      %s
+      <hr />
+      %s
+      </body></html>'''
+    return html%(count, frag_mem, frag_index)
+
+    
+
+
 
