@@ -92,6 +92,9 @@ class CacheEntry(object):
       reactor.callLater(0, d.errback, Failure(Cancel()))
     self.readRequests = []
 
+  def halt(self):
+    self.notify = None
+
   def onReadyToRead(self):
     assert self.datafile
     for d in self.readRequests:
@@ -141,6 +144,9 @@ class CacheEntry(object):
       h(self)
     else:
       raise
+
+  def serialize(self):
+    assert self.datafile is None
    
 
 class Cache(object):
